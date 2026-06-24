@@ -1,0 +1,12 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DASHBOARD_LOCATION: "Trier, Germany"
+      DASHBOARD_LATITUDE: "49.7596"
+      DASHBOARD_LONGITUDE: "6.6442"
+      DASHBOARD_TIMEZONE: "Europe/Berlin"
+      DASHBOARD_CACHE_TTL: "300"
+    restart: unless-stopped
