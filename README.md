@@ -153,4 +153,4 @@ Das Betreiben von unbemannten Luftfahrzeugen unterliegt gesetzlichen Bestimmunge
 
 ---
 
-**Betreut von:** DLRG Trier-Stadt (Wasserrettung)
+Made with <3 in Trier
