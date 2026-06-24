@@ -5,8 +5,8 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![UV](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffabianmirz%2Fdashboard_weather%2Fmain%2Fpyproject.toml&query=project.version&label=version)](pyproject.toml)
-[![Docker](https://img.shields.io/badge/docker-ready-blue?logo=docker)](docker/Dockerfile)
+[![UV](https://img.shields.io/badge/uv-0.4+-blue)](https://docs.astral.sh/uv/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue?logo=docker)](Dockerfile)
 
 ## 📖 Überblick
 
@@ -32,13 +32,13 @@ Das Dashboard richtet sich an Einsatzkräfte, Drohnenpiloten und Einsatzstellen,
 ### Voraussetzung
 
 - [Python 3.12+](https://www.python.org/downloads/)
-- [uv](https://docs.astral.sh/uv/) (Dependency Manager)
+- [uv](https://docs.astral.sh/uv/) (Dependency Manager, >= 0.4.0)
 
 ### Lokal ausführen
 
 ```bash
 # Repository klonen
-git clone https://github.com/fabianmirz/dashboard_weather.git
+git clone https://github.com/<your-username>/dashboard_weather.git
 cd dashboard_weather
 
 # Abhängigkeiten installieren
@@ -73,7 +73,7 @@ Alle Einstellungen werden über Umgebungsvariablen gesteuert:
 ### Beispiel
 
 ```bash
-DASHBOARD_PORT=9000 DASHBOARD_LOCATION=\"Berlin, Germany\" uv run dashboard-weather
+DASHBOARD_PORT=9000 DASHBOARD_LOCATION="Berlin, Germany" uv run dashboard-weather
 ```
 
 ## 📡 API
@@ -110,7 +110,7 @@ DASHBOARD_PORT=9000 DASHBOARD_LOCATION=\"Berlin, Germany\" uv run dashboard-weat
 
 ```
 dashboard_weather/
-├── src/dashboard_weather/
+├── dashboard_weather/
 │   ├── clients/            # Externe Datenquellen (Open-Meteo, dipul WMS)
 │   ├── services/           # Business Logic, Aggregation, Caching
 │   ├── web/                # FastAPI-App
@@ -119,8 +119,9 @@ dashboard_weather/
 │   ├── config.py           # Konfigurationsmanagement
 │   ├── models.py           # Pydantic-Modelle
 │   └── main.py             # Einstiegspunkt
-├── docker/                 # Docker-Konfiguration
 ├── tests/                  # Pytest-Suite
+├── Dockerfile              # Docker-Build
+├── docker-compose.yml      # Docker-Komposition
 ├── pyproject.toml          # Projektmetadaten und Abhängigkeiten
 └── README.md               # Diese Datei
 ```
@@ -136,8 +137,8 @@ uv run pytest
 ### Linting
 
 ```bash
-uv run ruff check src/
-uv run ruff format src/
+uv run ruff check --fix .
+uv run ruff format .
 ```
 
 ## 📄 Lizenz
