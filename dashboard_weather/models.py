@@ -66,6 +66,61 @@ class AirspaceRestriction:
 
 
 @dataclass(slots=True)
+class LaminarNotam:
+    notam_id: str
+    text: str
+    aerodrome_icao: str | None = None
+    fir_icao: str | None = None
+    issued_at: str | None = None
+    valid_from: str | None = None
+    valid_to: str | None = None
+    q_code: str | None = None
+
+
+@dataclass(slots=True)
+class WarningAlert:
+    event: str
+    headline: str
+    description: str
+    severity: str
+    certainty: str
+    sender: str
+    start: str
+    end: str
+    UTM_Lat: int | None = None
+    UTM_Lon: int | None = None
+
+
+@dataclass(slots=True)
+class WaterQualityMeasurement:
+    station: str
+    parameter: str
+    value: float
+    unit: str | None
+    timestamp: str | None
+
+
+@dataclass(slots=True)
+class WaterQualityAssessment:
+    station: str
+    chlorophyll_a_ug_per_l: float
+    classification: str
+    description: str
+    notes: list[str] = field(default_factory=list)
+    observed_at: str | None = None
+
+
+@dataclass(slots=True)
+class HiOrgEvent:
+    title: str
+    location: str
+    start: str
+    end: str | None = None
+    description: str = ""
+    category: str = ""
+
+
+@dataclass(slots=True)
 class DashboardData:
     location: str
     latitude: float
@@ -77,4 +132,9 @@ class DashboardData:
     drone: DroneConditions
     dipul_news: list[DipulNewsItem]
     airspace: list[AirspaceRestriction]
+    laminar_notams: list[LaminarNotam] = field(default_factory=list)
+    nina_alerts: list[WarningAlert] = field(default_factory=list)
+    hiorg_events: list[HiOrgEvent] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    water_quality: list[WaterQualityMeasurement] = field(default_factory=list)
+    water_quality_assessments: list[WaterQualityAssessment] = field(default_factory=list)

@@ -205,24 +205,11 @@
         gap: calc(2rem * var(--font-scale, 1));
       }
 
-      .card-hourly {
-        grid-column: span 2;
-      }
-
-      .card-news {
-        grid-column: span 1;
-      }
-
       .hero {
         grid-column: span 2;
       }
 
       .suitability {
-        grid-column: span 1;
-      }
-
-      .card-airspace,
-      .card-forecast {
         grid-column: span 1;
       }
 
@@ -268,14 +255,6 @@
         grid-template-columns: repeat(4, 1fr);
       }
 
-      .card-hourly {
-        grid-column: span 3;
-      }
-
-      .card-news {
-        grid-column: span 1;
-      }
-
       .hero {
         grid-column: span 3;
       }
@@ -289,7 +268,8 @@
 <body>
   <div class="page"
        data-lat="{{ data.latitude }}"
-       data-lng="{{ data.longitude }}">
+       data-lng="{{ data.longitude }}"
+       data-fetched-at="{{ data.fetched_at.strftime('%Y-%m-%dT%H:%M:%S') }}">
     <header class="header">
       <div class="header-branding">
         <img class="header-logo" src="/static/dlrg-trier-stadt-logo.svg" alt="DLRG Trier-Stadt Logo" height="44">
@@ -301,7 +281,10 @@
           </p>
         </div>
       </div>
-      <div class="header-clock" id="header-clock">--:--:--</div>
+      <div class="header-clock-wrap">
+        <div class="header-clock" id="header-clock">--:--</div>
+        <div class="clock-sub" id="clock-sub">Letzte Aktualisierung: --</div>
+      </div>
       <div class="header-actions">
         <a class="button ghost" href="{{ settings.dipul_map_url }}" target="_blank" rel="noopener">dipul Kartentool</a>
         <a class="button" href="?refresh=1">Aktualisieren</a>
@@ -318,7 +301,7 @@
 
     <main class="grid">
       <!-- Hero: current weather -->
-      <section class="card hero card-hero">
+      <section class="card hero card-hero card-hero-sm">
         <div class="hero-main">
           <div class="weather-icon" data-code="{{ data.current.weather_code }}"></div>
           <div>
@@ -328,129 +311,179 @@
             <p class="muted">Gefühlt wie {{ '%.0f'|format(data.current.apparent_temperature_c) }}°C</p>
           </div>
         </div>
-        <dl class="stats-row">
+        <dl class="stats-row stats-row-sm">
           <div><dt>Wind</dt><dd>{{ '%.1f'|format(data.current.wind_speed_kmh) }} km/h</dd></div>
           <div><dt>Böen</dt><dd>{{ '%.1f'|format(data.current.wind_gusts_kmh) }} km/h</dd></div>
           <div><dt>Luftfeuchtigkeit</dt><dd>{{ data.current.humidity_percent }}%</dd></div>
           <div><dt>Bewölkung</dt><dd>{{ data.current.cloud_cover_percent }}%</dd></div>
         </dl>
+        {% if data.hourly %}
+        <div class="short-forecast">
+          {% for h in data.hourly[:4] %}
+          <div class="short-hour">
+            <span class="short-time">{{ h.time.strftime('%-H:00') }}</span>
+            <span class="short-icon">⛅</span>
+            <span class="short-temp">{{ '%.0f'|format(h.temperature_c) }}°</span>
+            <span class="short-wind"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg> {{ '%.0f'|format(h.wind_speed_kmh) }} km/h</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
       </section>
 
       <!-- Flight Info Map -->
-      <section class="card card-map">
+      <section class="card card-map card-map-sm">
         <div class="card-head">
           <p class="label">✈ Fluginfo-Karte · Trier</p>
         </div>
         <div id="map"></div>
       </section>
 
+      <!-- NINA & KATWARN Warnings -->
+      <section class="card card-warnings card-warnings-sm">
+        <div class="card-head">
+          <p class="label">Warn-App-Nachrichten (NINA/KATWARN)</p>
+          <a class="text-link" href="https://ninawarn.app/" target="_blank" rel="noopener">nina</a>
+        </div>
+        {% if data.nina_alerts %}
+        <div class="news-list">
+          {% for alert in data.nina_alerts %}
+          <article class="news-item warning-item warning-{{ alert.severity }}">
+            <div class="news-meta">
+              {% if alert.event %}<span class="badge warning-badge">{{ alert.event }}</span>{% endif %}
+              {% if alert.start %}<time>{{ alert.start }}</time>{% endif %}
+            </div>
+            <h3>{{ alert.headline }}</h3>
+            {% if alert.description %}<p>{{ alert.description }}</p>{% endif %}
+            <div class="warning-severity">
+              {% if alert.sender %}<span class="warning-sender">{{ alert.sender }}</span>{% endif %}
+              <span class="warning-certainty">{{ alert.certainty }}</span>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="lead" style="color: var(--accent);">Keine aktuellen Warnmeldungen für Trier verfügbar.</p>
+        <p class="muted">Stand: {{ data.fetched_at.strftime('%d.%m.%Y %H:%M') }} Uhr. Quelle: NINA (Notfall-Informationen National).</p>
+        {% endif %}
+      </section>
+
+      <!-- HiOrg Events/Termine (optional, enabled via HIORG_API_URL env var) -->
+      {% if settings.hiorg_api_url and data.hiorg_events %}
+      <section class="card card-events">
+        <div class="card-head">
+          <p class="label">Veranstaltungen & Termine</p>
+        </div>
+        <div class="news-list">
+          {% for event in data.hiorg_events %}
+          <article class="news-item event-item">
+            <div class="news-meta">
+              {% if event.start %}<time>{{ event.start }}</time>{% endif %}
+              {% if event.category %}<span class="badge event-badge">{{ event.category }}</span>{% endif %}
+            </div>
+            <h3>{{ event.title }}</h3>
+            {% if event.location %}<p class="event-location">📍 {{ event.location }}</p>{% endif %}
+            {% if event.description %}<p>{{ event.description }}</p>{% endif %}
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
       <!-- Drone flight suitability -->
       <section class="card suitability suitability-{{ data.drone.suitability }} card-drone">
         <div class="card-head">
-          <p class="label">Drohnen-Flugbedingungen</p>
+          <p class="label">UAV</p>
           {% set suit_labels = {'good': 'Gut', 'caution': 'Vorsicht', 'poor': 'Schlecht', 'unknown': 'Unbekannt'} %}
           <span class="badge">{{ suit_labels.get(data.drone.suitability, data.drone.suitability) }}</span>
         </div>
-        <p class="lead">{{ data.drone.suitability_detail }}</p>
-        <dl class="stats-grid">
+        <p class="lead" style="font-size: 0.75rem;">{{ data.drone.suitability_detail }}</p>
+        <dl class="stats-grid drone-grid">
           <div><dt>Wind 10 m</dt><dd>{{ '%.1f'|format(data.drone.wind_10m_kmh) }} km/h</dd></div>
           <div><dt>Wind 80 m</dt><dd>{{ '%.1f'|format(data.drone.wind_80m_kmh) }} km/h</dd></div>
           <div><dt>Wind 120 m</dt><dd>{{ '%.1f'|format(data.drone.wind_120m_kmh) }} km/h</dd></div>
-          <div><dt>Tiefe Wolken</dt><dd>{{ data.drone.cloud_cover_low_percent }}%</dd></div>
+          <div><dt>Wolken</dt><dd>{{ data.drone.cloud_cover_low_percent }}%</dd></div>
         </dl>
-        <ul class="notes">
+        <ul class="notes compact-notes">
           {% for note in data.drone.notes %}
           <li>{{ note }}</li>
           {% endfor %}
         </ul>
       </section>
 
-      <!-- Airspace -->
-      <section class="card card-airspace">
+      <!-- Water Quality / Blaualgen Assessment -->
+      <section class="card card-water-quality card-water-quality-sm">
         <div class="card-head">
-          <p class="label">dipul · Luftraum bei Trier</p>
+          <p class="label">Blaualgen · Trier-Rhein-Maas</p>
+          {% if data.water_quality_assessments %}
+          {% set suit_labels = {'gut': 'Gut', 'maessig': 'Vorsicht', 'schlecht': 'Schlecht', 'unbekannt': 'Unbekannt'} %}
+          {% set best = data.water_quality_assessments[0] %}
+          <span class="badge badge-{{ best.classification }}">{{ suit_labels.get(best.classification, best.classification) }}</span>
+          {% endif %}
         </div>
-        {% if data.airspace %}
-        {% for zone in data.airspace %}
-        <article class="airspace-item">
-          <h3>{{ zone.title }}</h3>
-          <dl class="detail-list">
-            {% for key, value in zone.details.items() %}
-            <div><dt>{{ key }}</dt><dd>{{ value }}</dd></div>
+        {% if data.water_quality_assessments %}
+        {% for assessment in data.water_quality_assessments %}
+        <section class="water-assessment-item">
+          <div class="compact-head">
+            <span class="label">{{ assessment.station|upper }}</span>
+            <span class="param-label">Chlorophyll a</span>
+            <span class="value">{{ '%.1f'|format(assessment.chlorophyll_a_ug_per_l) }} µg/L</span>
+          </div>
+          <div class="compact-desc">{{ assessment.description }}</div>
+          {% if assessment.notes %}
+          <ul class="notes compact-notes">
+            {% for note in assessment.notes %}
+            <li>{{ note }}</li>
             {% endfor %}
-          </dl>
-        </article>
+          </ul>
+          {% endif %}
+        </section>
         {% endfor %}
         {% else %}
-        <p class="lead">Keine verzeichneten Einschränkungen in den abgefragten dipul-Ebenen an diesem Standort erkannt.</p>
-        <p class="muted">Vor dem Flug immer im offiziellen dipul-Kartentool überprüfen. Geografische Zonen, NOTAMs und Eigentumsschutzrechte können weiterhin gelten.</p>
+        <p class="lead" style="color: var(--accent);">Keine aktuellen Blaualgen-Messwerte verfügbar.</p>
+        <p class="muted">Stand: {{ data.fetched_at.strftime('%d.%m.%Y %H:%M') }} Uhr. Quelle: RLP Wasserportal.</p>
         {% endif %}
       </section>
 
-      <!-- Hourly forecast -->
-      <section class="card card-hourly">
+      <!-- Airspace + NOTAMs -->
+      <section class="card card-airspace">
         <div class="card-head">
-          <p class="label">Nächste Stunden</p>
+          <p class="label">dipul · Luftraum bei Trier & NOTAMs</p>
+          <a class="text-link" href="{{ settings.dipul_map_url }}" target="_blank" rel="noopener">dipul Kartentool</a>
         </div>
-        <div class="hourly-scroll">
-          {% for hour in data.hourly %}
-          <article class="hour-chip">
-            <time>{{ hour.time.strftime('%H:%M') }}</time>
-            <strong>{{ '%.0f'|format(hour.temperature_c) }}°</strong>
-            <span>{{ '%.0f'|format(hour.wind_speed_kmh) }} km/h</span>
-            {% if hour.precipitation_probability_percent is not none %}
-            <span class="muted">{{ hour.precipitation_probability_percent }}% Regen</span>
-            {% endif %}
+        {% if data.airspace or data.laminar_notams %}
+        {% if data.airspace %}
+        <h4 class="section-title">Luftraum</h4>
+        <div class="airspace-list">
+          {% for zone in data.airspace %}
+          <article class="airspace-item">
+            <h3>{{ zone.title }}</h3>
+            <dl class="detail-list">
+              {% for key, value in zone.details.items() %}
+              <div><dt>{{ key }}</dt><dd>{{ value }}</dd></div>
+              {% endfor %}
+            </dl>
           </article>
           {% endfor %}
         </div>
-      </section>
-
-      <!-- 3-day forecast -->
-      <section class="card card-forecast">
-        <div class="card-head">
-          <p class="label">3-Tage-Vorhersage</p>
-        </div>
-        <div class="forecast-list">
-          {% for day in data.daily %}
-          <article class="forecast-item">
-            <div class="forecast-day">
-              <span class="weather-icon small" data-code="{{ day.weather_code }}"></span>
-              <div>
-                <strong>{{ day.date }}</strong>
-                <p class="muted">{{ day.description }}</p>
-              </div>
+        {% endif %}
+        {% if data.laminar_notams %}
+        <h4 class="section-title">NOTAMs</h4>
+        <div class="notam-list">
+          {% for notam in data.laminar_notams %}
+          <article class="notam-item">
+            <div class="notam-meta">
+              {% if notam.aerodrome_icao %}<span class="badge notam-badge">{{ notam.aerodrome_icao }}</span>{% endif %}
+              {% if notam.q_code %}<span class="badge qcode-badge">{{ notam.q_code }}</span>{% endif %}
             </div>
-            <div class="forecast-metrics">
-              <span>{{ '%.0f'|format(day.temp_min_c) }}° / {{ '%.0f'|format(day.temp_max_c) }}°</span>
-              <span>{{ '%.1f'|format(day.precipitation_sum_mm) }} mm</span>
-              <span>{{ '%.0f'|format(day.wind_max_kmh) }} km/h</span>
-            </div>
+            <h3>NOTAM {{ notam.notam_id or '?' }}</h3>
+            <p class="notam-text">{{ notam.text }}</p>
           </article>
           {% endfor %}
         </div>
-      </section>
-
-      <!-- dipul news -->
-      <section class="card card-news">
-        <div class="card-head">
-          <p class="label">dipul · Aktuelle Nachrichten</p>
-          <a class="text-link" href="{{ settings.dipul_news_url }}" target="_blank" rel="noopener">Alle Nachrichten</a>
-        </div>
-        {% if data.dipul_news %}
-        <div class="news-list">
-          {% for item in data.dipul_news %}
-          <article class="news-item">
-            <div class="news-meta">
-              {% if item.date %}<time>{{ item.date }}</time>{% endif %}
-            </div>
-            <h3><a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.title }}</a></h3>
-            {% if item.summary %}<p>{{ item.summary }}</p>{% endif %}
-          </article>
-          {% endfor %}
-        </div>
+        {% endif %}
         {% else %}
-        <p class="muted">Keine dipul-Nachrichten geladen.</p>
+        <p class="lead" style="font-size: 0.75rem;">Keine Luftraumbeschränkungen oder NOTAMs für Trier.</p>
         {% endif %}
       </section>
 

@@ -173,7 +173,7 @@ class OpenMeteoClient:
 
         if score >= 80:
             suitability = "good"
-            detail = "Gute Bedingungen für Freifluggeschäfte."
+            detail = "Gute Bedingungen für UAV."
         elif score >= 55:
             suitability = "caution"
             detail = "Fliegbar mit Vorsicht — Wind und Sicht prüfen."
@@ -182,7 +182,7 @@ class OpenMeteoClient:
             detail = "Flugverschiebung empfohlen."
 
         if not notes:
-            notes.append("Keine Wetterblocker für Freifluggeschäfte erkannt.")
+            notes.append("Keine Wetterblocker für Freifluggeschäfte mit UAV erkannt.")
 
         return DroneConditions(
             wind_10m_kmh=current.wind_speed_kmh,

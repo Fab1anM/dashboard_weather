@@ -8,6 +8,12 @@ wheels/
 
 # Virtual environments
 .venv
-AGENTS*
 GOALS*
 SKILLS*
+resume.txt
+
+# Environment variables
+.env
+
+# API keys / tokens
+https://nina.api.bund.dev/

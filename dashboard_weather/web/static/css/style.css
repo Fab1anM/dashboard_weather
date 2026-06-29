@@ -66,17 +66,35 @@ body {
 }
 
 .header {
-  display: flex;
-  justify-content: space-between;
-  gap: 1.5rem;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .header-branding {
+  grid-column: 1 / 5;
   display: flex;
   align-items: center;
   gap: 1.25rem;
+  flex-shrink: 0;
+}
+
+.header-clock-wrap {
+  grid-column: 5 / 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.header-actions {
+  grid-column: 9 / 13;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-self: end;
 }
 
 .header-logo {
@@ -112,18 +130,29 @@ h1 {
 
 .header-clock {
   font-family: "DM Sans", monospace;
-  font-size: 1.5rem;
+  font-size: 3.2rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--text);
   flex-shrink: 0;
-  padding: 0.25rem 0;
+  padding: 0 0.5rem;
+  line-height: 1.1;
+  text-align: right;
 }
 
-.header-actions {
+.header-clock-container {
   display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.clock-sub {
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  white-space: nowrap;
 }
 
 .button {
@@ -176,6 +205,7 @@ h1 {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 1rem;
+  align-items: stretch;
 }
 
 .card {
@@ -186,17 +216,18 @@ h1 {
   box-shadow: var(--shadow);
   width: 100%;
   min-width: 0;
+  height: 100%;
 }
 
-/* All cards span 6 columns (50% width) - uniform grid */
+/* All cards span 4 columns (33% width each) - three cards per row for TV display */
 .card-hero,
 .card-map,
 .card-drone,
 .card-airspace,
-.card-hourly,
-.card-forecast,
-.card-news {
-  grid-column: span 6;
+.card-water-quality,
+.card-warnings,
+.card-events {
+  grid-column: span 4;
 }
 
 /* Mobile: all cards full width */
@@ -209,9 +240,9 @@ h1 {
   .card-map,
   .card-drone,
   .card-airspace,
-  .card-hourly,
-  .card-forecast,
-  .card-news {
+  .card-water-quality,
+  .card-warnings,
+  .card-events {
     grid-column: span 12;
   }
 
@@ -285,6 +316,43 @@ dt {
 dd {
   margin: 0;
   font-weight: 600;
+}
+
+/* Compact 4-hour short forecast */
+.short-forecast {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 0 0;
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  align-items: center;
+}
+
+.short-hour {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.short-time {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.short-icon {
+  font-size: 1rem;
+}
+
+.short-temp {
+  font-weight: 700;
+}
+
+.short-wind {
+  color: var(--text-muted);
+  font-size: 0.75rem;
 }
 
 .lead {
@@ -473,12 +541,125 @@ dd {
   font-size: 0.88rem;
 }
 
-/* Map container */
+/* Hero: current weather - shrink for compact layout */
+.card-hero-sm .temperature {
+  font-size: clamp(2.2rem, 4vw, 3rem);
+}
+
+.card-hero-sm .weather-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+}
+
+.card-hero-sm .weather-icon::after {
+  font-size: 1.4rem;
+}
+
+.card-hero-sm .condition {
+  font-size: 0.95rem;
+}
+
+.card-hero-sm .muted {
+  font-size: 0.8rem;
+}
+
+.card-hero-sm .stats-row-sm {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.card-hero-sm .stats-row-sm div {
+  padding: 0.5rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+.card-hero-sm .stats-row-sm dt {
+  font-size: 0.7rem;
+}
+
+.card-hero-sm .stats-row-sm dd {
+  font-size: 0.85rem;
+}
+
+/* Map: smaller height */
+.card-map-sm #map,
 #map {
-  width: 100%;
-  height: 400px;
-  border-radius: 12px;
-  overflow: hidden;
+  height: 320px;
+}
+
+/* Warnings card */
+.card-warnings-sm .news-item.warning-item {
+  border-left: 3px solid var(--border);
+  padding-left: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.card-warnings-sm .news-item.warning-item.warning-gruen {
+  border-left-color: #2e7d32;
+}
+
+.card-warnings-sm .news-item.warning-item.warning-blau {
+  border-left-color: #1565c0;
+}
+
+.card-warnings-sm .news-item.warning-item.warning-gelb {
+  border-left-color: #f9a825;
+}
+
+.card-warnings-sm .news-item.warning-item.warning-orange {
+  border-left-color: #e65100;
+}
+
+.card-warnings-sm .news-item.warning-item.warning-rot {
+  border-left-color: #c62828;
+}
+
+.card-warnings-sm .news-item.warning-item.warning-unbekannt {
+  border-left-color: #666;
+}
+
+.card-warnings-sm .warning-badge {
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  margin-right: 0.4rem;
+}
+
+.card-warnings-sm .warning-severity {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.card-warnings-sm .warning-sender {
+  font-style: italic;
+}
+
+.card-warnings-sm .news-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
+.card-warnings-sm .news-meta time {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.card-warnings-sm .news-item h3 {
+  font-size: 0.95rem;
+  margin: 0.15rem 0 0.3rem;
+}
+
+.card-warnings-sm .news-item p {
+  font-size: 0.82rem;
+  margin: 0;
+  color: var(--text-muted);
 }
 
 /* Hide all Leaflet UI for TV display */
@@ -494,4 +675,279 @@ dd {
   #map {
     height: calc(400px * var(--font-scale, 1));
   }
+}
+
+/* NOTAM items within the news card */
+.section-title {
+  margin: 1.25rem 0 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.section-title:first-child {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.airspace-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.notam-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+/* NOTAM items within the airspace card */
+.notam-item {
+  background: var(--surface-muted);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  border-left: 3px solid var(--warning);
+}
+
+.notam-item .notam-text {
+  font-size: 0.85rem;
+  margin: 0.3rem 0 0;
+  line-height: 1.45;
+  color: var(--text);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.notam-item .badge.notam-badge {
+  background: #e8e0ff;
+  color: #4a2d8a;
+}
+
+:root[data-theme="dark"] .notam-item .badge.notam-badge {
+  background: #2a1f4a;
+  color: #c4b5fd;
+}
+
+:root[data-theme="dark"] .notam-item .badge.qcode-badge {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: monospace;
+  font-size: 0.78rem;
+}
+
+/* ===== Water Quality Assessment Widget - Compact ===== */
+
+/* Individual assessment items */
+.card-water-quality-sm .water-assessment-item {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.card-water-quality-sm .water-assessment-item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.card-water-quality-sm .water-assessment-item .card-head {
+  margin-bottom: 0.2rem;
+}
+
+.card-water-quality-sm .water-assessment-item .card-head .label {
+  font-size: 0.7rem;
+}
+
+/* Compact assessment head - all left-aligned stacked */
+.card-water-quality-sm .compact-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  margin-bottom: 0.15rem;
+}
+
+/* Station name - primary label */
+.card-water-quality-sm .compact-head .label {
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+/* Parameter name - secondary, muted */
+.card-water-quality-sm .compact-head .param-label {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-bottom: 0.1rem;
+}
+
+/* Value - prominent, accent colored */
+.card-water-quality-sm .compact-head .value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.1;
+}
+
+.card-water-quality-sm .compact-head .desc {
+  font-size: 0.68rem;
+  margin: 0;
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+}
+
+.card-water-quality-sm .stat-chip {
+  font-size: 0.72rem;
+  padding: 0.1rem 0.35rem;
+  background: var(--surface-muted);
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.card-water-quality-sm .compact-notes {
+  margin: 0;
+  padding-left: 0.8rem;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
+.card-water-quality-sm .compact-notes li {
+  margin-bottom: 0.08rem;
+}
+
+/* Compact description */
+.card-water-quality-sm .compact-desc {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin: 0.1rem 0 0.15rem;
+  line-height: 1.3;
+}
+
+/* Global styles for the card */
+.card-water-quality-sm {
+  padding: 0.35rem 0.45rem;
+}
+
+.card-water-quality-sm .card-head {
+  margin-bottom: 0.2rem;
+}
+
+.card-water-quality-sm .label {
+  font-size: 0.7rem;
+}
+
+.card-water-quality-sm .lead {
+  font-size: 0.78rem;
+  margin: 0.2rem 0;
+  line-height: 1.3;
+}
+
+/* No-data state - extra compact */
+.card-water-quality-sm .lead[style] {
+  font-size: 0.72rem;
+  margin: 0.2rem 0;
+}
+
+.card-water-quality-sm .muted {
+  font-size: 0.62rem;
+  margin: 0.1rem 0 0;
+  line-height: 1.3;
+}
+
+.card-water-quality-sm .stats-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin: 0.3rem 0;
+}
+
+.card-water-quality-sm .stats-grid div {
+  padding: 0.25rem 0.4rem;
+  font-size: 0.66rem;
+}
+
+.card-water-quality-sm .stats-grid dt {
+  font-size: 0.56rem;
+}
+
+.card-water-quality-sm .stats-grid dd {
+  font-size: 0.7rem;
+}
+
+/* Threshold reference table - minimal */
+.card-water-quality-sm .threshold-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.1rem 0.4rem;
+  margin: 0.25rem 0;
+  padding: 0.25rem 0.4rem;
+  background: var(--surface-muted);
+  border-radius: 4px;
+  font-size: 0.6rem;
+}
+
+.card-water-quality-sm .threshold-list dt {
+  font-weight: 700;
+  font-size: 0.56rem;
+}
+
+.card-water-quality-sm .threshold-list dd {
+  font-size: 0.56rem;
+  color: var(--text-muted);
+}
+
+/* Compact notes */
+.card-water-quality-sm .notes {
+  font-size: 0.66rem;
+  padding-left: 0.8rem;
+  margin: 0.2rem 0 0;
+}
+
+.card-water-quality-sm .notes li {
+  margin-bottom: 0.1rem;
+}
+
+/* Classification badges */
+.badge-gut {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.badge-maessig {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.badge-schlecht {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.badge-unbekannt {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+/* Dark mode overrides for classification badges */
+:root[data-theme="dark"] .badge-gut {
+  background: #122a24;
+  color: #3dd6a0;
+}
+
+:root[data-theme="dark"] .badge-maessig {
+  background: #2a2008;
+  color: #f0b840;
+}
+
+:root[data-theme="dark"] .badge-schlecht {
+  background: #2e1412;
+  color: #f27460;
+}
+
+:root[data-theme="dark"] .badge-unbekannt {
+  background: #232e3f;
+  color: #8892a4;
 }

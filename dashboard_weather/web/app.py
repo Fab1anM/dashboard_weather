@@ -76,6 +76,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     return app
 
 
+# Expose app at module level for uvicorn
+app = create_app()
+
+
 def _serialize_dashboard(data: DashboardData) -> dict:
     payload = asdict(data)
     payload["fetched_at"] = data.fetched_at.isoformat()

@@ -76,7 +76,7 @@ class DipulWmsClient:
         bbox = self._bbox_around_point(
             self._settings.latitude,
             self._settings.longitude,
-            delta=0.01,
+            delta=0.15,
         )
 
         params = {
@@ -86,23 +86,68 @@ class DipulWmsClient:
             "layers": ",".join(layers),
             "query_layers": ",".join(layers),
             "info_format": "text/html",
-            "i": 50,
-            "j": 50,
-            "width": 101,
-            "height": 101,
+            "i": 100,
+            "j": 100,
+            "width": 201,
+            "height": 201,
             "crs": "EPSG:4326",
             "bbox": bbox,
         }
-        response = await self._client.get(self._settings.dipul_wms_url, params=params)
-        response.raise_for_status()
 
+        # Query multiple points across the area to catch spatial restrictions
+        query_points = self._generate_query_points(bbox, grid_size=5)
+        all_restrictions: dict[str, AirspaceRestriction] = {}
+
+        for x, y in query_points:
+            query_params = {**params, "i": str(x), "j": str(y)}
+            try:
+                response = await self._client.get(self._settings.dipul_wms_url, params=query_params)
+                if response.status_code != 200:
+                    continue
+                restrictions = self._parse_response(response.text)
+                for r in restrictions:
+                    # Deduplicate by title
+                    key = r.details.get("title", r.details.get("Name", ""))
+                    if key and key not in all_restrictions:
+                        all_restrictions[key] = r
+            except Exception:
+                continue
+
+        return list(all_restrictions.values())
+
+    def _generate_query_points(self, bbox: str, grid_size: int = 5) -> list[tuple[int, int]]:
+        """Generate a grid of query points across the bbox."""
+        min_lon, min_lat, max_lon, max_lat = map(float, bbox.split(","))
+        step_lon = (max_lon - min_lon) / (grid_size - 1) if grid_size > 1 else 0
+        step_lat = (max_lat - min_lat) / (grid_size - 1) if grid_size > 1 else 0
+
+        points: list[tuple[int, int]] = []
+        for i in range(grid_size):
+            for j in range(grid_size):
+                lon = min_lon + i * step_lon
+                lat = min_lat + j * step_lat
+                # Convert lon/lat to pixel coords (201x201 canvas)
+                x = int(round((lon - min_lon) / (max_lon - min_lon) * 200))
+                y = int(round((max_lat - lat) / (max_lat - min_lat) * 200))
+                x = max(0, min(200, x))
+                y = max(0, min(200, y))
+                points.append((x, y))
+        return points
+
+    @staticmethod
+    def _parse_response(html: str) -> list[AirspaceRestriction]:
+        """Parse HTML response and extract restrictions."""
         parser = _FeatureInfoParser()
-        parser.feed(response.text)
+        parser.feed(html)
         if not parser.rows:
             return []
 
         details = {key: value for key, value in parser.rows if value}
+        if not details:
+            return []
+
         layer_hint = details.get("layer", details.get("Layer", "unknown"))
+        layers = list(LAYER_CATALOG.keys())
         matched_layer = next(
             (name for name in layers if name in layer_hint.lower()),
             layers[0],

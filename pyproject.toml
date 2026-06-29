@@ -6,10 +6,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.12,<5",
+    "dotenv>=0.9.9,<1",
     "fastapi>=0.115,<1",
     "httpx>=0.28,<1",
     "jinja2>=3.1,<4",
     "uvicorn[standard]>=0.34,<1",
+    "dashboard-weather",
 ]
 
 [project.scripts]
@@ -24,6 +26,9 @@ packages = ["dashboard_weather"]
 
 [tool.hatch.build.targets.sdist]
 include = ["dashboard_weather"]
+
+[tool.uv.sources]
+dashboard-weather = { path = ".", editable = true }
 
 [dependency-groups]
 dev = [

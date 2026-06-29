@@ -5,9 +5,18 @@ function updateClock() {
   el.textContent = now.toLocaleTimeString("de-DE", {
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
     hour12: false,
   });
+  // Update last refresh timestamp
+  const subEl = document.getElementById("clock-sub");
+  if (subEl) {
+    const pageEl = document.querySelector("[data-fetched-at]");
+    const fetchedStr = pageEl ? pageEl.dataset.fetchedAt : "";
+    if (fetchedStr) {
+      const fetched = new Date(fetchedStr);
+      subEl.textContent = `Letzte Aktualisierung: ${fetched.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
+    }
+  }
 }
 
 function applyNightMode() {
@@ -20,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   applyNightMode();
   // Re-check every minute in case user leaves the page running overnight
   setInterval(applyNightMode, 60 * 1000);
-  const refreshIntervalMs = 5 * 60 * 1000;
+  const refreshIntervalMs = 15 * 60 * 1000;
   let remaining = refreshIntervalMs;
 
   function formatTime(ms) {

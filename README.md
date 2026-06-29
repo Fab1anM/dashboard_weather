@@ -1,6 +1,6 @@
 # Dashboard Weather
 
-> Live-Wetter- und Drohnenflug-Dashboard für den Einsatz am Boden.
+> Live-Wetter-, Drohnenflug- und Einsatz-Dashboard für DLRG Wasserrettung in Trier, Deutschland.
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
@@ -8,13 +8,15 @@
 [![UV](https://img.shields.io/badge/uv-0.4+-blue)](https://docs.astral.sh/uv/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue?logo=docker)](Dockerfile)
 
-## 📖 Überblick
+## Überblick
 
-**Dashboard Weather** ist ein webbasiertes Einsatz-Dashboard für Wetter- und Drohnenfluginformationen in **Trier, Deutschland**. Es kombiniert Echtzeit-Wetterdaten mit flugrelevanten Kontextinformationen von [dipul.de](https://www.dipul.de) – der offiziellen digitalen Plattform für unbemannte Luftfahrt in Deutschland.
+**Dashboard Weather** ist ein webbasiertes Einsatz-Dashboard für Wetter-, Drohnenflug- und Einsatzinformationen in **Trier, Deutschland**. Es richtet sich an Einsatzkräfte, Drohnenpiloten und Einsatzstellen der DLRG Wasserrettung und bietet eine schnelle, übersichtliche Dashboard-Ansicht auf einem 16:9-TV-Display.
 
-Das Dashboard richtet sich an Einsatzkräfte, Drohnenpiloten und Einsatzstellen, die eine schnelle, übersichtliche Übersicht über Wetterbedingungen und Luftrauminformationen benötigen.
+Das Dashboard kombiniert Echtzeit-Wetterdaten mit flugrelevanten Kontextinformationen von [dipul.de](https://www.dipul.de) – der offiziellen digitalen Plattform für unbemannte Luftfahrt in Deutschland – sowie aktuellen Warnmeldungen und Terminen.
 
-## ✨ Features
+> **Hinweis:** Die NINA-API (`warnung.bund.de`) ist seit 2024 nicht mehr verfügbar. Der NINA-Client gibt leer zurück, ohne Fehlermeldungen zu erzeugen.
+
+## Features
 
 | Feature | Quelle | Beschreibung |
 |---|---|---|
@@ -24,10 +26,12 @@ Das Dashboard richtet sich an Einsatzkräfte, Drohnenpiloten und Einsatzstellen,
 | 🚁 **Drohnenflug-Suitability** | Eigenentwicklung | Heuristik für Wind, Böen, Niederschlag und Wolken |
 | 🗺️ **Luftraum-Overlay** | [dipul WMS](https://www.dipul.de) | Grafische Darstellung von Luftraumrestriktionen |
 | 📰 **dipul News** | [dipul](https://www.dipul.de) | Aktuelle Pressemitteilungen und Informationen |
+| 📅 **HiOrg Termine** | [HiOrg-Server](https://hiorg-server.de) | Optional: Veranstaltungen und Einsätze der DLRG (aktivierbar) |
+| 🌊 **Wasserqualitätsdaten** | [Wasserportal RLP](https://geodaten-wasser.rlp-umwelt.de) | Blaualgen- und Sauerstoffmessungen in Trierer Gewässern |
 | 🌙 **Nacht-Modus** | Eigenentwicklung | Automatischer Wechsel 18:00–07:00 |
 | 📱 **Responsive Design** | Eigenentwicklung | Optimiert für 16:9-Displays und Mobilgeräte |
 
-## 🚀 Schnellstart
+## Schnellstart
 
 ### Voraussetzung
 
@@ -44,8 +48,12 @@ cd dashboard_weather
 # Abhängigkeiten installieren
 uv sync
 
+# .env-Datei aus der Vorlage erstellen
+cp .env.example .env
+# .env nach Belieben bearbeiten
+
 # Server starten
-uv run dashboard-weather
+uv run python -m dashboard_weather.main
 ```
 
 Die Anwendung ist unter [http://localhost:8000](http://localhost:8000) erreichbar.
@@ -56,9 +64,17 @@ Die Anwendung ist unter [http://localhost:8000](http://localhost:8000) erreichba
 docker compose up --build
 ```
 
-## ⚙️ Konfiguration
+## Konfiguration
 
-Alle Einstellungen werden über Umgebungsvariablen gesteuert:
+Alle Einstellungen werden über Umgebungsvariablen gesteuert, die aus einer `.env`-Datei im Projekt-Root gelesen werden.
+
+### .env-Datei erstellen
+
+```bash
+cp .env.example .env
+```
+
+### Konfigurations-Übersicht
 
 | Variable | Standard | Beschreibung |
 |---|---|---|
@@ -69,6 +85,7 @@ Alle Einstellungen werden über Umgebungsvariablen gesteuert:
 | `DASHBOARD_LONGITUDE` | `6.6442` | Längengrad |
 | `DASHBOARD_TIMEZONE` | `Europe/Berlin` | Zeitzone für Prognosen |
 | `DASHBOARD_CACHE_TTL` | `300` | Cache-Lebensdauer in Sekunden |
+| `HIORG_API_URL` | (leer) | HiOrg-Server-URL aktivieren (optional) |
 
 ### Beispiel
 
@@ -76,7 +93,17 @@ Alle Einstellungen werden über Umgebungsvariablen gesteuert:
 DASHBOARD_PORT=9000 DASHBOARD_LOCATION="Berlin, Germany" uv run dashboard-weather
 ```
 
-## 📡 API
+### HiOrg-Termine aktivieren
+
+Die HiOrg-Termine sind standardmäßig deaktiviert. Um sie zu aktivieren, setze die Umgebungsvariable:
+
+```bash
+HIORG_API_URL="https://hiorg-server.de/api" uv run dashboard-weather
+```
+
+Der Client versucht, Events von der HiOrg-Server-API zu laden und blendet das Widget automatisch ein, wenn Daten verfügbar sind.
+
+## API
 
 | Endpoint | Methode | Beschreibung |
 |---|---|---|
@@ -90,43 +117,65 @@ DASHBOARD_PORT=9000 DASHBOARD_LOCATION="Berlin, Germany" uv run dashboard-weathe
 {
   "location": "Trier, Germany",
   "current": {
-    "temperature": 24,
-    "feels_like": 23,
-    "wind_speed": 12.5,
-    "wind_gusts": 22.0,
-    "humidity": 45,
-    "cloud_cover": 10,
-    "condition": "partly_cloudy"
+    "temperature_c": 24.0,
+    "apparent_temperature_c": 23.0,
+    "humidity_percent": 45,
+    "wind_speed_kmh": 12.5,
+    "wind_gusts_kmh": 22.0,
+    "weather_code": 0,
+    "description": "clear sky"
   },
+  "daily": [...],
   "hourly": [...],
-  "forecast": [...],
-  "drone_conditions": "good",
-  "airspace_status": "clear",
-  "news": [...]
+  "drone": {
+    "suitability": "good",
+    "wind_10m_kmh": 10.0,
+    "wind_80m_kmh": 15.0,
+    "suitability_detail": "Gut",
+    "notes": []
+  },
+  "airspace": [...],
+  "dipul_news": [...],
+  "nina_alerts": [],
+  "hiorg_events": [],
+  "water_quality": [],
+  "errors": []
 }
 ```
 
-## 📁 Projektstruktur
+## Projektstruktur
 
 ```
 dashboard_weather/
 ├── dashboard_weather/
-│   ├── clients/            # Externe Datenquellen (Open-Meteo, dipul WMS)
+│   ├── clients/            # Externe Datenquellen
+│   │   ├── open_meteo.py   # Wetterdaten (Open-Meteo)
+│   │   ├── dipul_news.py   # dipul Pressemitteilungen
+│   │   ├── dipul_wms.py    # Luftraum-Overlay (dipul WMS)
+│   │   ├── nina_alerts.py  # NINA/KATWARN Warnmeldungen (disabled)
+│   │   ├── hiorg_events.py # HiOrg-Server Termine (optional)
+│   │   └── water_portal.py # Wasserqualitätsdaten (RLP)
 │   ├── services/           # Business Logic, Aggregation, Caching
+│   │   └── dashboard.py    # DashboardService
 │   ├── web/                # FastAPI-App
+│   │   ├── app.py          # FastAPI-App & Routing
 │   │   ├── templates/      # Jinja2 HTML-Templates
 │   │   └── static/         # CSS, JS, Assets
-│   ├── config.py           # Konfigurationsmanagement
-│   ├── models.py           # Pydantic-Modelle
+│   ├── config.py           # Konfigurationsmanagement (.env)
+│   ├── models.py           # Dataclasses
+│   ├── cache.py            # TTL-Cache
+│   ├── fallbacks.py        # Fallback-Funktionen
+│   ├── weather_codes.py    # WMO Weather Code Mapping
 │   └── main.py             # Einstiegspunkt
 ├── tests/                  # Pytest-Suite
+├── .env.example            # .env-Vorlage
 ├── Dockerfile              # Docker-Build
 ├── docker-compose.yml      # Docker-Komposition
 ├── pyproject.toml          # Projektmetadaten und Abhängigkeiten
 └── README.md               # Diese Datei
 ```
 
-## 🧪 Entwicklung
+## Entwicklung
 
 ### Tests ausführen
 
@@ -141,11 +190,11 @@ uv run ruff check --fix .
 uv run ruff format .
 ```
 
-## 📄 Lizenz
+## Lizenz
 
 Dieses Projekt ist lizenziert unter der [MIT License](LICENSE).
 
-## ⚠️ Haftungsausschluss
+## Haftungsausschluss
 
 Dieses Dashboard dient ausschließlich zu Informationszwecken. Überprüfen Sie immer Wetterbedingungen, Luftraumrestriktionen und rechtliche Anforderungen im offiziellen [dipul-Kartentool](https://www.dipul.de), bevor Sie eine Drohne starten.
 
@@ -153,4 +202,4 @@ Das Betreiben von unbemannten Luftfahrzeugen unterliegt gesetzlichen Bestimmunge
 
 ---
 
-Made with <3 in Trier
+Made with ❤ in Trier
