@@ -1,7 +1,7 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import httpx
-from zoneinfo import ZoneInfo
 
 from dashboard_weather.config import Settings
 from dashboard_weather.models import (
@@ -20,7 +20,9 @@ class OpenMeteoClient:
         self._settings = settings
         self._client = client
 
-    async def fetch(self) -> tuple[CurrentWeather, list[DailyForecast], list[HourlySnapshot], DroneConditions]:
+    async def fetch(
+        self,
+    ) -> tuple[CurrentWeather, list[DailyForecast], list[HourlySnapshot], DroneConditions]:
         params = {
             "latitude": self._settings.latitude,
             "longitude": self._settings.longitude,

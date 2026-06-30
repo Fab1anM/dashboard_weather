@@ -8,9 +8,9 @@ NINA_API_BASE = "https://warnung.bund.de/api31"
 
 # ARS (Amtlicher Regionalschlüssel) for Trier districts
 # Format: 5-digit district code + 6 zeros
-TRIER_DISTRICT_ARS = "072110000000"       # Trier-Stadt
-TRIER_SAARBURG_ARS = "072340000000"      # Trier-Saarburg
-RLP_STATE_ARS = "120000000000"           # Rheinland-Pfalz
+TRIER_DISTRICT_ARS = "072110000000"  # Trier-Stadt
+TRIER_SAARBURG_ARS = "072340000000"  # Trier-Saarburg
+RLP_STATE_ARS = "120000000000"  # Rheinland-Pfalz
 
 # Sources to aggregate warnings from (order = priority)
 WARNING_SOURCES = ["katwarn", "mowas", "dwd", "police", "lhp", "biwapp"]
@@ -58,7 +58,9 @@ class NinaAlertClient:
             if not isinstance(data, list):
                 return []
 
-            return [alert for entry in data if (alert := self._parse_dashboard_entry(entry)) is not None]
+            return [
+                alert for entry in data if (alert := self._parse_dashboard_entry(entry)) is not None
+            ]
         except (httpx.RequestError, httpx.HTTPStatusError):
             return []
 
@@ -73,7 +75,9 @@ class NinaAlertClient:
             if not isinstance(data, list):
                 return []
 
-            return [alert for entry in data if (alert := self._parse_map_data_entry(entry)) is not None]
+            return [
+                alert for entry in data if (alert := self._parse_map_data_entry(entry)) is not None
+            ]
         except (httpx.RequestError, httpx.HTTPStatusError):
             return []
 
@@ -167,10 +171,9 @@ class NinaAlertClient:
         description = ""
         if isinstance(trans_keys, dict):
             description = trans_keys.get("description", trans_keys.get("instruction", ""))
-        if not description and i18n_title:
+        if not description and i18n_title and isinstance(i18n_title, dict):
             # Use the English title as a secondary description
-            if isinstance(i18n_title, dict):
-                description = i18n_title.get("en", "")
+            description = i18n_title.get("en", "")
 
         return WarningAlert(
             event=event,

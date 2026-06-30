@@ -127,8 +127,8 @@ class DipulWmsClient:
                 lon = min_lon + i * step_lon
                 lat = min_lat + j * step_lat
                 # Convert lon/lat to pixel coords (201x201 canvas)
-                x = int(round((lon - min_lon) / (max_lon - min_lon) * 200))
-                y = int(round((max_lat - lat) / (max_lat - min_lat) * 200))
+                x = round((lon - min_lon) / (max_lon - min_lon) * 200)
+                y = round((max_lat - lat) / (max_lat - min_lat) * 200)
                 x = max(0, min(200, x))
                 y = max(0, min(200, y))
                 points.append((x, y))

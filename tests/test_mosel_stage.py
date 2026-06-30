@@ -100,13 +100,10 @@ class TestMoselStageClientFetch:
 
         mock_httpx_client.get.side_effect = Exception("Connection refused")
 
-        with patch.object(
-            MoselStageClient, "_fetch_with_requests", return_value=None
-        ):
-            with patch.object(
-                client, "_fetch_from_html", return_value=None
-            ):
-                result = await client.fetch()
+        fetch_req = patch.object(MoselStageClient, "_fetch_with_requests", return_value=None)
+        fetch_html = patch.object(client, "_fetch_from_html", return_value=None)
+        with fetch_req, fetch_html:
+            result = await client.fetch()
 
         assert result is None
 
@@ -480,13 +477,9 @@ class TestMoselStageClientRequestsFallback:
         # Make requests also fail
         from dashboard_weather.clients.mosel_stage import MoselStageClient
 
-        with patch.object(
-            MoselStageClient, "_fetch_with_requests", return_value=None
-        ):
-            # Mock the HTML fallback to return None (no data)
-            with patch.object(
-                client, "_fetch_from_html", return_value=None
-            ):
-                result = await client.fetch()
+        fetch_req = patch.object(MoselStageClient, "_fetch_with_requests", return_value=None)
+        fetch_html = patch.object(client, "_fetch_from_html", return_value=None)
+        with fetch_req, fetch_html:
+            result = await client.fetch()
 
         assert result is None

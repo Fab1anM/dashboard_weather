@@ -34,8 +34,8 @@ REQUIRED_HEADERS = {
 # EU-Badewasserrichtlinie (2006/7/EG) Grenzwerte für Chlorophyll a (µg/L)
 # Quelle: EU Badegewässerrichtlinie & Deutsche Gewässerschutzrichtlinien
 CHLOROPHYLL_THRESHOLDS = {
-    "gut": (0, 20),           # < 20 µg/L: Gut
-    "maessig": (20, 40),      # 20-40 µg/L: Mäßig
+    "gut": (0, 20),  # < 20 µg/L: Gut
+    "maessig": (20, 40),  # 20-40 µg/L: Mäßig
     "schlecht": (40, float("inf")),  # > 40 µg/L: Schlecht
 }
 
@@ -75,12 +75,14 @@ class WaterPortalClient:
             try:
                 measurements = await task
                 results.extend(measurements)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("Failed to fetch water data for %s: %s", station_name, exc)
 
         return results
 
-    async def _fetch_station_data(self, station_id: int, station_name: str) -> list[WaterQualityMeasurement]:
+    async def _fetch_station_data(
+        self, station_id: int, station_name: str
+    ) -> list[WaterQualityMeasurement]:
         """Fetch current measurements for a single station."""
         params = {"w": f"MESSST_NR=number:{station_id}"}
 
@@ -148,7 +150,9 @@ class WaterPortalClient:
             return "schlecht"
 
     @staticmethod
-    def describe_water_quality(chlorophyll_a_ug_per_l: float, classification: str) -> tuple[str, list[str]]:
+    def describe_water_quality(
+        chlorophyll_a_ug_per_l: float, classification: str
+    ) -> tuple[str, list[str]]:
         """Generiere Beschreibung und Hinweise basierend auf der Klassifizierung.
 
         Returns:
@@ -197,7 +201,8 @@ class WaterPortalClient:
         """
         # Filter für Chlorophyll a Messungen
         chlorophyll_measurements = [
-            m for m in measurements
+            m
+            for m in measurements
             if "chlorophyll" in m.parameter.lower() or "blaualgen" in m.parameter.lower()
         ]
 

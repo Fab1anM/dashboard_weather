@@ -50,7 +50,9 @@ class HiOrgEventsClient:
             if not isinstance(events_data, list):
                 return []
 
-            return [event for entry in events_data if (event := self._parse_event(entry)) is not None]
+            return [
+                event for entry in events_data if (event := self._parse_event(entry)) is not None
+            ]
 
         except (httpx.RequestError, httpx.HTTPStatusError):
             return []
@@ -72,11 +74,17 @@ class HiOrgEventsClient:
 
                 # Handle different response structures
                 if isinstance(data, list):
-                    return [event for entry in data if (event := self._parse_event(entry)) is not None]
+                    return [
+                        event for entry in data if (event := self._parse_event(entry)) is not None
+                    ]
                 elif isinstance(data, dict):
                     events = data.get("events", data.get("data", data.get("items", [])))
                     if isinstance(events, list):
-                        return [event for entry in events if (event := self._parse_event(entry)) is not None]
+                        return [
+                            event
+                            for entry in events
+                            if (event := self._parse_event(entry)) is not None
+                        ]
 
             except (httpx.RequestError, httpx.HTTPStatusError):
                 continue

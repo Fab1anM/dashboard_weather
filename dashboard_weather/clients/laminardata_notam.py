@@ -11,7 +11,6 @@ import httpx
 from dashboard_weather.config import Settings
 from dashboard_weather.models import LaminarNotam
 
-
 # Aerodromes near Trier that matter for drone operations
 _NEARBY_AERODROMES: list[str] = [
     "EDGT",  # Trier-Föhren (closest, drone-relevant)
@@ -45,7 +44,12 @@ class LaminarNotamClient:
             return [
                 LaminarNotam(
                     notam_id="INFO",
-                    text="NOTAM-Daten sind aktuell nicht verfügbar. Um Echtzeit-Fluginformationen für den Drohnenbetrieb zu erhalten, registriere dich unter https://developer.laminardata.aero/signup und trage den API-Key in die Umgebungsvariable LAMINAR_NOTAM_API_KEY ein.",
+                    text=(
+                        "NOTAM-Daten nicht verfügbar. "
+                        "Registriere dich unter "
+                        "https://developer.laminardata.aero/signup "
+                        "und trage den API-Key als LAMINAR_NOTAM_API_KEY ein."
+                    ),
                     aerodrome_icao=None,
                     q_code=None,
                 )
@@ -66,7 +70,7 @@ class LaminarNotamClient:
                     key = n.notam_id
                     if key and key not in all_notams:
                         all_notams[key] = n
-            except Exception:  # noqa: BLE001 — degrade gracefully
+            except Exception:
                 continue
 
         # Query FIR-wide NOTAMs (Germany-wide)
@@ -76,7 +80,7 @@ class LaminarNotamClient:
                 key = n.notam_id
                 if key and key not in all_notams:
                     all_notams[key] = n
-        except Exception:  # noqa: BLE001 — degrade gracefully
+        except Exception:
             pass
 
         return list(all_notams.values())
@@ -90,9 +94,7 @@ class LaminarNotamClient:
         response.raise_for_status()
         return self._parse_notams(response.json())
 
-    async def _fetch_fir_notams(
-        self, fir_icao: str, headers: dict[str, str]
-    ) -> list[LaminarNotam]:
+    async def _fetch_fir_notams(self, fir_icao: str, headers: dict[str, str]) -> list[LaminarNotam]:
         """Fetch NOTAMs for a specific Flight Information Region."""
         url = f"https://api.laminardata.aero/notamdata/v2/icao-prefixes/ED/firs/{fir_icao}/notams"
         response = await self._client.get(url, headers=headers, timeout=10.0)

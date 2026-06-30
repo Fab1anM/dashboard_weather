@@ -8,6 +8,7 @@ the httpx client cannot reach the API (e.g. Docker network issues),
 and a BeautifulSoup HTML fallback for when both HTTP methods fail.
 """
 
+import contextlib
 import logging
 
 import httpx
@@ -52,7 +53,7 @@ class MoselStageClient:
             resp = await self._client.get(url, timeout=15.0)
             resp.raise_for_status()
             data = resp.json()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("Mosel stage httpx API unavailable, trying requests fallback: %s", exc)
             data = self._fetch_with_requests(url)
             if data is not None:
@@ -74,7 +75,7 @@ class MoselStageClient:
             resp = requests.get(url, timeout=15.0)  # type: ignore[no-untyped-call]
             resp.raise_for_status()
             return resp.json()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("Mosel stage requests fallback also failed: %s", exc)
             return None
 
@@ -87,7 +88,7 @@ class MoselStageClient:
         try:
             resp = await self._client.get(DETAIL_PAGE_URL, timeout=15.0)
             resp.raise_for_status()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("Mosel stage HTML fallback also failed: %s", exc)
             return None
 
@@ -115,11 +116,8 @@ class MoselStageClient:
                 strong = p.find("strong")
                 if strong:
                     value_str = strong.get_text(strip=True)
-                    try:
-                        # Value is in cm (e.g., "236"), convert to meters
+                    with contextlib.suppress(ValueError):
                         current_stage_m = float(value_str) / 100.0
-                    except ValueError:
-                        pass
 
             if "Vorhersage der HVZ Rheinland-Pfalz vom" in text:
                 strong = p.find("strong")

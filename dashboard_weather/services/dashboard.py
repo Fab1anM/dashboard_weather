@@ -11,8 +11,8 @@ from dashboard_weather.clients.dipul_news import DipulNewsClient
 from dashboard_weather.clients.dipul_wms import DipulWmsClient
 from dashboard_weather.clients.hiorg_events import HiOrgEventsClient
 from dashboard_weather.clients.laminardata_notam import LaminarNotamClient
-from dashboard_weather.clients.open_meteo import OpenMeteoClient
 from dashboard_weather.clients.mosel_stage import MoselStageClient
+from dashboard_weather.clients.open_meteo import OpenMeteoClient
 from dashboard_weather.clients.water_portal import WaterPortalClient, WaterQualityAssessment
 from dashboard_weather.config import Settings
 from dashboard_weather.fallbacks import empty_dashboard
@@ -41,7 +41,9 @@ class DashboardService:
 
     async def _fetch_dashboard(self) -> DashboardData:
         errors: list[str] = []
-        headers = {"User-Agent": "dashboard-weather/0.1 (+https://github.com/local/dashboard-weather)"}
+        headers = {
+            "User-Agent": "dashboard-weather/0.1 (+https://github.com/local/dashboard-weather)"
+        }
 
         async with httpx.AsyncClient(
             timeout=self._settings.request_timeout_seconds,
@@ -103,14 +105,17 @@ class DashboardService:
             errors.append(f"Mosel stage data unavailable: {mosel_stage}")
             mosel_stage = None
 
-        # Bewerte Wasserqualität (Chlorophyll a / Blaualgen) — nur Fankel (andere Stationen haben keine Chlorophyll-Daten)
+        # Bewerte Wasserqualität (Chlorophyll a / Blaualgen)
+        # nur Fankel hat Chlorophyll-Daten
         water_quality_assessments: list[WaterQualityAssessment] = []
         if water_quality:
             try:
                 fankel_measurements = [m for m in water_quality if m.station == "fankel"]
                 if fankel_measurements:
-                    water_quality_assessments = water_client.assess_water_quality(fankel_measurements)
-            except Exception as exc:  # noqa: BLE001
+                    water_quality_assessments = water_client.assess_water_quality(
+                        fankel_measurements
+                    )
+            except Exception as exc:
                 errors.append(f"Water quality assessment failed: {exc}")
 
         return DashboardData(
@@ -137,7 +142,7 @@ class DashboardService:
     async def _safe_fetch_weather(client: OpenMeteoClient, errors: list[str]):
         try:
             return await client.fetch()
-        except Exception as exc:  # noqa: BLE001 — surface upstream failures in UI
+        except Exception as exc:
             errors.append(f"Weather data unavailable: {exc}")
             return None, None, None, None
 
@@ -145,7 +150,7 @@ class DashboardService:
     async def _safe_fetch_news(client: DipulNewsClient, errors: list[str]):
         try:
             return await client.fetch()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             errors.append(f"dipul news unavailable: {exc}")
             return []
 
@@ -153,7 +158,7 @@ class DashboardService:
     async def _safe_fetch_airspace(client: DipulWmsClient, errors: list[str]):
         try:
             return await client.fetch_nearby_restrictions()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             errors.append(f"dipul airspace lookup unavailable: {exc}")
             return []
 
@@ -161,7 +166,7 @@ class DashboardService:
     async def _safe_fetch_notams(client: LaminarNotamClient, errors: list[str]):
         try:
             return await client.fetch_notams()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             errors.append(f"laminar NOTAM data unavailable: {exc}")
             return []
 
@@ -169,7 +174,7 @@ class DashboardService:
     async def _safe_fetch_water_quality(client: WaterPortalClient, errors: list[str]):
         try:
             return await client.fetch()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             errors.append(f"Water quality data unavailable: {exc}")
             return []
 
@@ -177,7 +182,7 @@ class DashboardService:
     async def _safe_fetch_mosel_stage(client: MoselStageClient, errors: list[str]):
         try:
             return await client.fetch()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             errors.append(f"Mosel stage data unavailable: {exc}")
             return None
 
@@ -185,6 +190,6 @@ class DashboardService:
     async def _safe_fetch_hiorg(client: HiOrgEventsClient, errors: list[str]):
         try:
             return await client.fetch()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             errors.append(f"HiOrg events unavailable: {exc}")
             return []

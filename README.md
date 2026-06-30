@@ -149,6 +149,8 @@ Der Client versucht, Events von der HiOrg-Server-API zu laden und blendet das Wi
 | `/` | `GET` | HTML-Dashboard |
 | `/api/dashboard` | `GET` | JSON-Daten (optional: `?refresh=true`) |
 | `/health` | `GET` | Gesundheitsstatus |
+| `/docs` | `GET` | Interaktive API-Dokumentation (Swagger UI) |
+| `/redoc` | `GET` | Alternative API-Dokumentation (ReDoc) |
 
 ### JSON-Response Struktur
 

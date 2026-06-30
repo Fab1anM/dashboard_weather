@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True, slots=True)
@@ -13,7 +13,9 @@ class Settings:
     cache_ttl_seconds: int = 300
     dipul_news_url: str = "https://www.dipul.de/homepage/de/aktuelle-meldungen/"
     dipul_wms_url: str = "https://uas-betrieb.de/geoservices/dipul/wms"
-    dipul_map_url: str = "https://www.dipul.de/homepage/de/information/geografische-gebiete/kartentool/"
+    dipul_map_url: str = (
+        "https://www.dipul.de/homepage/de/information/geografische-gebiete/kartentool/"
+    )
     laminar_notam_api_key: str = ""
     request_timeout_seconds: float = 15.0
     hiorg_api_url: str = "https://hiorg-server.de/api"
