@@ -284,11 +284,16 @@
       <div class="header-clock-wrap">
         <div class="header-clock" id="header-clock">--:--</div>
         <div class="clock-date" id="clock-date">--.--.----</div>
-        <div class="clock-sub" id="clock-sub">Letzte Aktualisierung: --</div>
+        <div class="clock-sub" id="clock-sub">
+          <span class="clock-sub-label">Letzte Aktualisierung</span>
+          <span class="clock-sub-time" id="clock-sub-time">--</span>
+          <span class="clock-sub-divider">·</span>
+          <span class="clock-sub-countdown" id="clock-sub-countdown"></span>
+        </div>
       </div>
       <div class="header-actions">
         <a class="button ghost" href="{{ settings.dipul_map_url }}" target="_blank" rel="noopener">dipul Kartentool</a>
-        <a class="button" href="?refresh=1">Aktualisieren</a>
+        <a class="button" id="refresh-button" href="?refresh=1">Aktualisieren</a>
       </div>
     </header>
 
