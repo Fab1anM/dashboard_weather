@@ -17,29 +17,11 @@ FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
-# Install system dependencies + D-Bus
-RUN apt-get update && apt-get install -y \
-    xvfb \
-    chromium \
-    chromium-driver \
-    dbus \
-    dbus-x11 \
-    fonts-liberation \
-    fonts-noto-cjk \
-    fonts-noto-color-emoji \
-    wget \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# D-Bus-Verzeichnis erstellen (verhindert "unknown address type")
-RUN mkdir -p /run/user/0
-
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app/.venv/bin:$PATH" \
     DASHBOARD_HOST=0.0.0.0 \
-    DASHBOARD_PORT=8000 \
-    DISPLAY=:99
+    DASHBOARD_PORT=8000
 
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/dashboard_weather /app/dashboard_weather

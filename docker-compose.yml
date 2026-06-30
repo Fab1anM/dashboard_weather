@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   dashboard:
     build: .
-    container_name: dashboard-kiosk
+    container_name: dashboard-server
     restart: unless-stopped
     network_mode: host
     environment:
