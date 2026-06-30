@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   dashboard:
     build: .
@@ -10,9 +12,3 @@ services:
       DASHBOARD_LONGITUDE: "6.6442"
       DASHBOARD_TIMEZONE: "Europe/Berlin"
       DASHBOARD_CACHE_TTL: "300"
-    devices:
-      - /dev/dri/card0:/dev/dri/card0
-      - /dev/dri/renderD128:/dev/dri/renderD128
-    group_add:
-      - video
-      - render

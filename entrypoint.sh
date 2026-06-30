@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-# D-Bus Systembus starten (Chromium benötigt ihn zwingend)
+# D-Bus Systembus starten
 dbus-daemon --system --fork
 
-# Xvfb starten auf Display :99 (passt zu Dockerfile ENV)
+# Xvfb starten auf Display :99
 Xvfb :99 -screen 0 1920x1080x24 &
 XVFB_PID=$!
 sleep 2
@@ -22,14 +22,13 @@ for i in $(seq 1 10); do
     sleep 1
 done
 
-# Chromium im Kiosk-Modus
+# Chromium im Kiosk-Modus (Software-Rendering)
 DISPLAY=:99 chromium \
     --kiosk \
     --no-sandbox \
-    --use-gl=egl \
-    --in-process-gpu \
-    --ignore-gpu-blocklist \
+    --disable-gpu \
     --disable-gpu-compositing \
+    --disable-software-rasterizer \
     --disable-infobars \
     --disable-features=TranslateUI \
     --disable-session-crashed-bubble \
@@ -43,6 +42,8 @@ DISPLAY=:99 chromium \
     --disable-default-apps \
     --disable-sync \
     --disable-translate \
+    --disable-features=VizDisplayCompositor \
+    --disable-features=UseSkiaRenderer \
     --kiosk http://localhost:8000 &
 BROWSER_PID=$!
 
