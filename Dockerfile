@@ -1,6 +1,6 @@
+cat > kiosk/Dockerfile <<'EOF'
 # syntax=docker/dockerfile:1
 
-# Multi-stage build with Xvfb and Chromium for Raspberry Pi deployment
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 WORKDIR /app
@@ -14,12 +14,11 @@ COPY dashboard_weather ./dashboard_weather
 
 RUN uv sync --frozen --no-dev --no-editable
 
-# Runtime image based on Debian bookworm-slim with Chromium/Xvfb
 FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
-# Install system dependencies for headless browser support + D-Bus
+# Install system dependencies + D-Bus
 RUN apt-get update && apt-get install -y \
     xvfb \
     chromium \
@@ -32,6 +31,9 @@ RUN apt-get update && apt-get install -y \
     wget \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+# D-Bus-Verzeichnis erstellen (verhindert "unknown address type")
+RUN mkdir -p /run/user/0
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
