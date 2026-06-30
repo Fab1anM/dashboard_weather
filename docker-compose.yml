@@ -1,12 +1,18 @@
 services:
   dashboard:
     build: .
-    ports:
-      - "8000:8000"
+    container_name: dashboard-kiosk
+    restart: unless-stopped
+    network_mode: host  
     environment:
       DASHBOARD_LOCATION: "Trier, Germany"
       DASHBOARD_LATITUDE: "49.7596"
       DASHBOARD_LONGITUDE: "6.6442"
       DASHBOARD_TIMEZONE: "Europe/Berlin"
       DASHBOARD_CACHE_TTL: "300"
-    restart: unless-stopped
+    devices:
+      - /dev/dri/card0:/dev/dri/card0
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    group_add:
+      - video
+      - render

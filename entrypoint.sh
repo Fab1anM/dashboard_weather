@@ -33,6 +33,11 @@ chromium \
     --disable-default-apps \
     --disable-sync \
     --disable-translate \
+    --disable-gpu \
+    --in-process-gpu \
+    --enable-features=VaapiVideoDecoder \
+    --ignore-gpu-blocklist \
+    --gpu-device-index=0 \
     --kiosk http://localhost:8000 &
 BROWSER_PID=$!
 
