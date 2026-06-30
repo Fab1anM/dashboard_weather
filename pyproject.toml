@@ -12,7 +12,6 @@ dependencies = [
     "jinja2>=3.1,<4",
     "requests>=2.31,<3",
     "uvicorn[standard]>=0.34,<1",
-    "dashboard-weather",
 ]
 
 [project.scripts]

@@ -243,6 +243,49 @@ uv run ruff check --fix .
 uv run ruff format .
 ```
 
+### Docker & Raspberry Pi
+
+Die Anwendung kann als Docker-Container deployed werden. Der Container enthält Xvfb und Chromium für headless Browser-Unterstützung (z.B. für Selenium/Selenium-Tests).
+
+Für den Raspberry Pi kann das Dashboard als **Kiosk-Modus** im Vollbild laufen – die FastAPI-API wird gestartet und Chromium öffnet automatisch die Dashboard-Seite im Kiosk-Modus.
+
+```bash
+# Image bauen
+docker build -t dashboard-weather .
+
+# Container starten
+docker-compose up -d
+
+# oder direkt mit docker
+docker run -d \
+  -p 8000:8000 \
+  -e DASHBOARD_LOCATION="Trier, Germany" \
+  -e DASHBOARD_LATITUDE="49.7596" \
+  -e DASHBOARD_LONGITUDE="6.6442" \
+  -e DASHBOARD_TIMEZONE="Europe/Berlin" \
+  -e DASHBOARD_CACHE_TTL="300" \
+  --name dashboard-weather \
+  dashboard-weather
+```
+
+#### Raspberry Pi
+
+Für den Raspberry Pi (ARM64/aarch64) das Docker-Image nativ bauen:
+
+```bash
+# Auf dem Raspberry Pi:
+docker build -t dashboard-weather .
+docker run -d -p 8000:8000 --restart unless-stopped dashboard-weather
+```
+
+Alternativ mit Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+Die Konfiguration erfolgt über Environment-Variablen (siehe `docker-compose.yml`) oder eine `.env`-Datei im Projektverzeichnis.
+
 ## Lizenz
 
 Dieses Projekt ist lizenziert unter der [MIT License](LICENSE).
