@@ -9,7 +9,10 @@ import logging
 import httpx
 
 from dashboard_weather.config import Settings
-from dashboard_weather.models import WaterQualityAssessment, WaterQualityMeasurement
+from dashboard_weather.models import (
+    WaterQualityAssessment,
+    WaterQualityMeasurement,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -12,6 +12,7 @@ from dashboard_weather.clients.dipul_wms import DipulWmsClient
 from dashboard_weather.clients.hiorg_events import HiOrgEventsClient
 from dashboard_weather.clients.laminardata_notam import LaminarNotamClient
 from dashboard_weather.clients.open_meteo import OpenMeteoClient
+from dashboard_weather.clients.mosel_stage import MoselStageClient
 from dashboard_weather.clients.water_portal import WaterPortalClient, WaterQualityAssessment
 from dashboard_weather.config import Settings
 from dashboard_weather.fallbacks import empty_dashboard
@@ -51,6 +52,7 @@ class DashboardService:
             news_client = DipulNewsClient(self._settings, client)
             wms_client = DipulWmsClient(self._settings, client)
             water_client = WaterPortalClient(self._settings, client)
+            mosel_client = MoselStageClient(self._settings, client)
             hiorg_client = HiOrgEventsClient(self._settings, client)
             notam_client = LaminarNotamClient(self._settings, client)
 
@@ -61,6 +63,7 @@ class DashboardService:
                 self._safe_fetch_airspace(wms_client, errors),
                 self._safe_fetch_notams(notam_client, errors),
                 self._safe_fetch_water_quality(water_client, errors),
+                self._safe_fetch_mosel_stage(mosel_client, errors),
             ]
             if self._hiorg_enabled:
                 fetch_tasks.append(self._safe_fetch_hiorg(hiorg_client, errors))
@@ -73,9 +76,10 @@ class DashboardService:
         airspace: Any = results[2]
         laminar_notams: Any = results[3]
         water_quality: Any = results[4]
+        mosel_stage: Any = results[5]
 
         # Optional hiorg result if enabled
-        hiorg_events: Any = results[5] if self._hiorg_enabled else []
+        hiorg_events: Any = results[6] if self._hiorg_enabled else []
 
         current, daily, hourly, drone = weather_result
         if current is None:
@@ -95,6 +99,9 @@ class DashboardService:
         if isinstance(water_quality, Exception):
             errors.append(f"Water quality data unavailable: {water_quality}")
             water_quality = []
+        if isinstance(mosel_stage, Exception):
+            errors.append(f"Mosel stage data unavailable: {mosel_stage}")
+            mosel_stage = None
 
         # Bewerte Wasserqualität (Chlorophyll a / Blaualgen) — nur Fankel (andere Stationen haben keine Chlorophyll-Daten)
         water_quality_assessments: list[WaterQualityAssessment] = []
@@ -123,6 +130,7 @@ class DashboardService:
             errors=errors,
             water_quality=water_quality,
             water_quality_assessments=water_quality_assessments,
+            mosel_stage_data=mosel_stage,
         )
 
     @staticmethod
@@ -164,6 +172,14 @@ class DashboardService:
         except Exception as exc:  # noqa: BLE001
             errors.append(f"Water quality data unavailable: {exc}")
             return []
+
+    @staticmethod
+    async def _safe_fetch_mosel_stage(client: MoselStageClient, errors: list[str]):
+        try:
+            return await client.fetch()
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"Mosel stage data unavailable: {exc}")
+            return None
 
     @staticmethod
     async def _safe_fetch_hiorg(client: HiOrgEventsClient, errors: list[str]):

@@ -28,8 +28,47 @@ Das Dashboard kombiniert Echtzeit-Wetterdaten mit flugrelevanten Kontextinformat
 | 📰 **dipul News** | [dipul](https://www.dipul.de) | Aktuelle Pressemitteilungen und Informationen |
 | 📅 **HiOrg Termine** | [HiOrg-Server](https://hiorg-server.de) | Optional: Veranstaltungen und Einsätze der DLRG (aktivierbar) |
 | 🌊 **Wasserqualitätsdaten** | [Wasserportal RLP](https://geodaten-wasser.rlp-umwelt.de) | Blaualgen- und Sauerstoffmessungen in Trierer Gewässern |
+| 🌊 **Mosel-Pegelstand** | [HVZ RLP](https://www.hochwasser.rlp.de) | Echtzeit-Wasserstand, Abfluss und 48h-Vorhersage des Moselpegels Trier |
+| ✈️ **NOTAMs** | [Laminar NOTAM](https://notam.laminar.aero) | Flugsicherungs-meldungen für den Luftraum Trier |
 | 🌙 **Nacht-Modus** | Eigenentwicklung | Automatischer Wechsel 18:00–07:00 |
 | 📱 **Responsive Design** | Eigenentwicklung | Optimiert für 16:9-Displays und Mobilgeräte |
+
+## Architektur & Datenfluss
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      DashboardService                          │
+│                                                                 │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
+│  │ OpenMeteo │ │ DipulNews │ │ DipulWMS │ │ WaterPortal│           │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘           │
+│       │             │             │             │                │
+│  ┌────▼─────┐ ┌────▼─────┐ ┌────▼─────┐ ┌────▼─────┐           │
+│  │ MoselStage│ │ LaminarNotam│ │ HiOrgEvents │ (optional)    │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘                  │
+│       │             │             │                         │
+│       ▼             ▼             ▼                         │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │              TTL-Cache (5 Minuten)                      │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                           │                                  │
+│                    ┌──────▼──────┐                           │
+│                    │   FastAPI   │                           │
+│                    │  /         │                           │
+│                    │  /api/dash │                           │
+│                    └─────────────┘                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Mosel-Pegel Fallback-Kette
+
+Der MoselStageClient verwendet eine dreistufige Fallback-Kette, um Daten auch bei Netzwerkproblemen bereitzustellen:
+
+1. **Primär: `httpx` (async)** – Direkter API-Zugriff auf `https://www.hochwasser.rlp.de/api/v1/measurement-site/26500100`
+2. **Fallback 1: `requests` (sync)** – Gleicher API-Endpoint, aber synchroner Aufruf. Nützlich, wenn der async Client im Docker-Netzwerk blockiert wird.
+3. **Fallback 2: `BeautifulSoup` (HTML)** – Scraping der Detailseite, wenn beide HTTP-Methoden scheitern. Liefert nur den aktuellen Pegel, keine Prognosen.
+
+Alle drei Wege verwenden denselben API-Endpoint für Messwerte und Prognosen (p10-p90).
 
 ## Schnellstart
 
@@ -139,6 +178,17 @@ Der Client versucht, Events von der HiOrg-Server-API zu laden und blendet das Wi
   "nina_alerts": [],
   "hiorg_events": [],
   "water_quality": [],
+  "mosel_stage_data": {
+    "station": "Trier / Mosel",
+    "current_stage_m": 2.37,
+    "timestamp": "2026-06-30T06:15:00Z",
+    "trend": "fallend",
+    "forecast": [...],
+    "threshold_warning_m": 5.0,
+    "threshold_high_m": 6.0,
+    "description": "Stauregulierung aktiv"
+  },
+  "water_quality_assessments": [],
   "errors": []
 }
 ```
@@ -154,7 +204,8 @@ dashboard_weather/
 │   │   ├── dipul_wms.py    # Luftraum-Overlay (dipul WMS)
 │   │   ├── nina_alerts.py  # NINA/KATWARN Warnmeldungen (disabled)
 │   │   ├── hiorg_events.py # HiOrg-Server Termine (optional)
-│   │   └── water_portal.py # Wasserqualitätsdaten (RLP)
+│   │   ├── water_portal.py # Wasserqualitätsdaten (RLP)
+│   │   └── mosel_stage.py  # Mosel-Pegelstand (HVZ RLP)
 │   ├── services/           # Business Logic, Aggregation, Caching
 │   │   └── dashboard.py    # DashboardService
 │   ├── web/                # FastAPI-App

@@ -7,6 +7,17 @@ function updateClock() {
     minute: "2-digit",
     hour12: false,
   });
+
+  // Date
+  const dateEl = document.getElementById("clock-date");
+  if (dateEl) {
+    dateEl.textContent = now.toLocaleDateString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
   // Update last refresh timestamp
   const subEl = document.getElementById("clock-sub");
   if (subEl) {

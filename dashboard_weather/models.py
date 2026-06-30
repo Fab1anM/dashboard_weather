@@ -111,6 +111,33 @@ class WaterQualityAssessment:
 
 
 @dataclass(slots=True)
+class MoselStageMeasurement:
+    station: str
+    stage_m: float  # Pegelstand in Metern über NN
+    timestamp: str | None
+    description: str = ""
+
+
+@dataclass(slots=True)
+class MoselStageForecast:
+    hour: str  # "14:00"
+    stage_m: float  # prognostizierter Pegelstand
+    trend: str  # "steigend", "fallend", "gleichbleibend"
+
+
+@dataclass(slots=True)
+class MoselStageData:
+    station: str
+    current_stage_m: float
+    timestamp: str | None
+    forecast: list[MoselStageForecast]
+    trend: str  # "steigend", "fallend", "gleichbleibend"
+    threshold_warning_m: float = 5.0  # Warngrenze
+    threshold_high_m: float = 6.0  # Hochwassergrenze
+    description: str = ""
+
+
+@dataclass(slots=True)
 class HiOrgEvent:
     title: str
     location: str
@@ -138,3 +165,4 @@ class DashboardData:
     errors: list[str] = field(default_factory=list)
     water_quality: list[WaterQualityMeasurement] = field(default_factory=list)
     water_quality_assessments: list[WaterQualityAssessment] = field(default_factory=list)
+    mosel_stage_data: MoselStageData | None = None

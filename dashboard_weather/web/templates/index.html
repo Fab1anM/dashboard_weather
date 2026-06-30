@@ -283,6 +283,7 @@
       </div>
       <div class="header-clock-wrap">
         <div class="header-clock" id="header-clock">--:--</div>
+        <div class="clock-date" id="clock-date">--.--.----</div>
         <div class="clock-sub" id="clock-sub">Letzte Aktualisierung: --</div>
       </div>
       <div class="header-actions">
@@ -412,7 +413,7 @@
       </section>
 
       <!-- Water Quality / Blaualgen Assessment -->
-      <section class="card card-water-quality card-water-quality-sm">
+      <section class="card card-water-quality card-water-quality-half">
         <div class="card-head">
           <p class="label">Blaualgen · Trier-Rhein-Maas</p>
           {% if data.water_quality_assessments %}
@@ -442,6 +443,62 @@
         {% else %}
         <p class="lead" style="color: var(--accent);">Keine aktuellen Blaualgen-Messwerte verfügbar.</p>
         <p class="muted">Stand: {{ data.fetched_at.strftime('%d.%m.%Y %H:%M') }} Uhr. Quelle: RLP Wasserportal.</p>
+        {% endif %}
+      </section>
+
+      <!-- Mosel Pegelstand Trier -->
+      <section class="card card-pegel">
+        <div class="card-head">
+          <p class="label">Moselpegel Trier</p>
+          {% if data.mosel_stage_data %}
+          {% if data.mosel_stage_data.current_stage_m >= data.mosel_stage_data.threshold_high_m %}
+          <span class="badge badge-danger">Hochwasser</span>
+          {% elif data.mosel_stage_data.current_stage_m >= data.mosel_stage_data.threshold_warning_m %}
+          <span class="badge badge-warning">Meldehöhe</span>
+          {% else %}
+          <span class="badge">Normal</span>
+          {% endif %}
+          {% endif %}
+        </div>
+        {% if data.mosel_stage_data %}
+        <div class="pegel-main">
+          <div class="pegel-value">
+            <span class="pegel-number">{{ '%.2f'|format(data.mosel_stage_data.current_stage_m) }}</span>
+            <span class="pegel-unit">m</span>
+          </div>
+          <div class="pegel-trend">
+            {% if data.mosel_stage_data.trend == 'steigend' %}
+            ↑ steigend
+            {% elif data.mosel_stage_data.trend == 'fallend' %}
+            ↓ fallend
+            {% else %}
+            → gleichbleibend
+            {% endif %}
+          </div>
+        </div>
+        <dl class="pegel-stats">
+          <div><dt>Meldehöhe</dt><dd>{{ '%.1f'|format(data.mosel_stage_data.threshold_warning_m) }} m</dd></div>
+          <div><dt>Hochwassergrenze</dt><dd>{{ '%.1f'|format(data.mosel_stage_data.threshold_high_m) }} m</dd></div>
+        </dl>
+        {% if data.mosel_stage_data.description %}
+        <p class="pegel-hint">{{ data.mosel_stage_data.description }}</p>
+        {% endif %}
+        {% if data.mosel_stage_data.forecast %}
+        <h4 class="section-title">Vorhersage</h4>
+        <div class="pegel-forecast">
+          {% for fc in data.mosel_stage_data.forecast[:6] %}
+          <div class="pegel-forecast-item">
+            <span class="pegel-forecast-time">{{ fc.hour[11:16] }}</span>
+            <span class="pegel-forecast-value">{{ '%.2f'|format(fc.stage_m) }} m</span>
+            <span class="pegel-forecast-trend">{{ fc.trend }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <p class="muted">Stand: {{ data.mosel_stage_data.timestamp or '?' }} Uhr. Quelle: HVZ Rheinland-Pfalz.</p>
+        {% else %}
+        <p class="lead" style="color: var(--accent);">Keine aktuellen Pegelstände verfügbar.</p>
+        <p class="muted">Quelle: Hochwasservorhersagezentrale Rheinland-Pfalz.</p>
         {% endif %}
       </section>
 
