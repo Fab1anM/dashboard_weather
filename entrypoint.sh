@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+# D-Bus Systembus starten (Chromium benötigt ihn zwingend)
+dbus-daemon --system --fork
+
+# Xvfb starten auf Display :99 (passt zu Dockerfile ENV)
+Xvfb :99 -screen 0 1920x1080x24 &
+XVFB_PID=$!
+sleep 2
+
 # FastAPI Backend starten auf Port 8000
 dashboard-weather &
 APP_PID=$!
@@ -14,11 +22,13 @@ for i in $(seq 1 10); do
     sleep 1
 done
 
-# Chromium im Kiosk-Modus (direkt über DRM/KMS)
-chromium \
+# Chromium im Kiosk-Modus
+DISPLAY=:99 chromium \
     --kiosk \
     --no-sandbox \
     --use-gl=egl \
+    --in-process-gpu \
+    --ignore-gpu-blocklist \
     --disable-gpu-compositing \
     --disable-infobars \
     --disable-features=TranslateUI \
@@ -33,14 +43,10 @@ chromium \
     --disable-default-apps \
     --disable-sync \
     --disable-translate \
-    --disable-gpu \
-    --in-process-gpu \
-    --enable-features=VaapiVideoDecoder \
-    --ignore-gpu-blocklist \
-    --gpu-device-index=0 \
     --kiosk http://localhost:8000 &
 BROWSER_PID=$!
 
 # Auf alle Prozesse warten
 wait $APP_PID
+wait $XVFB_PID
 wait $BROWSER_PID

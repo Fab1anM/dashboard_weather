@@ -1,7 +1,6 @@
 # syntax=docker/dockerfile:1
 
 # Multi-stage build with Xvfb and Chromium for Raspberry Pi deployment
-
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 WORKDIR /app
@@ -20,11 +19,13 @@ FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
-# Install system dependencies for headless browser support
+# Install system dependencies for headless browser support + D-Bus
 RUN apt-get update && apt-get install -y \
     xvfb \
     chromium \
     chromium-driver \
+    dbus \
+    dbus-x11 \
     fonts-liberation \
     fonts-noto-cjk \
     fonts-noto-color-emoji \

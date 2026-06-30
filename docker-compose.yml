@@ -3,7 +3,7 @@ services:
     build: .
     container_name: dashboard-kiosk
     restart: unless-stopped
-    network_mode: host  
+    network_mode: host
     environment:
       DASHBOARD_LOCATION: "Trier, Germany"
       DASHBOARD_LATITUDE: "49.7596"
