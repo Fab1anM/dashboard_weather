@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 #
-# setup-pi-kiosk.sh
-# Interactive setup for Docker-based Firefox kiosk on Raspberry Pi
+# setup-kiosk.sh
+# Interactive setup for Docker-based Firefox kiosk on any Linux machine
 # Designed for pre-login kiosk mode (starts before login screen)
 #
 # Usage:
-#   sudo bash setup-pi-kiosk.sh
+#   sudo bash setup-kiosk.sh
 #
-# Prerequisites:
-#   - Raspberry Pi with Docker installed
-#   - Pi connected to HDMI monitor
-#   - Dashboard running on Pi (port 8000)
+# This script detects the OS/distro and configures accordingly.
+# No assumptions about Raspberry Pi or any specific hardware.
 #
 
 set -euo pipefail
@@ -32,10 +30,10 @@ read_default() {
 # ── Configuration: prompt the user ────────────────────────────────
 echo ""
 echo "============================================"
-echo " Dashboard Kiosk Setup for Raspberry Pi"
+echo " Dashboard Kiosk Setup"
 echo "============================================"
 
-KIOSK_USER=$(read_default "   Kiosk username (runs Firefox)" "pi")
+KIOSK_USER=$(read_default "   Kiosk username (runs Firefox)" "kiosk")
 DASHBOARD_HOST=$(read_default "   Dashboard hostname/IP" "localhost")
 DASHBOARD_PORT=$(read_default "   Dashboard port" "8000")
 DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
@@ -44,6 +42,7 @@ AUTO_START=$(read_default "   Enable auto-start on boot? (y/n)" "y")
 CURSOR_TIMEOUT=$(read_default "   Hide cursor after idle (seconds)" "5")
 RESOLUTION=$(read_default "   Display resolution (e.g. 1920x1080x24)" "1920x1080x24")
 DISABLE_DISPLAY_MANAGER=$(read_default "   Disable display manager (for pre-login kiosk)? (y/n)" "y")
+DISPLAY_MODE=$(read_default "   Display mode: xvfb (virtual), host (existing X11)" "xvfb")
 
 echo ""
 echo "============================================"
@@ -54,17 +53,63 @@ echo " Dashboard  : ${DASHBOARD_URL}"
 echo " Install dir: ${REPO_DIR}"
 echo " Cursor hide: ${CURSOR_TIMEOUT}s"
 echo " Resolution : ${RESOLUTION}"
+echo " Display    : ${DISPLAY_MODE}"
 echo " Auto-start : ${AUTO_START}"
 echo " No-login   : ${DISABLE_DISPLAY_MANAGER}"
 echo "============================================"
+
+# ── Step 0: Detect OS/distro ──────────────────────────────────────
+echo ""
+echo "[0/8] Detecting OS/distro..."
+
+if [[ -f /etc/os-release ]]; then
+    source /etc/os-release
+    DISTRO_ID="$ID"
+    DISTRO_VERSION="$VERSION_ID"
+    DISTRO_PRETTY_NAME="$PRETTY_NAME"
+else
+    DISTRO_ID="unknown"
+    DISTRO_VERSION="unknown"
+    DISTRO_PRETTY_NAME="Unknown"
+fi
+
+DISTRO_ARCH=$(uname -m)
+
+echo "  OS: ${DISTRO_PRETTY_NAME} (${DISTRO_ID} ${DISTRO_VERSION})"
+echo "  Arch: ${DISTRO_ARCH}"
 
 # ── Step 1: Install Docker (if missing) ───────────────────────────
 echo ""
 echo "[1/8] Checking Docker installation..."
 if ! command -v docker &>/dev/null; then
-    echo "  Installing Docker..."
-    curl -fsSL https://get.docker.com | sh
-    sudo usermod -aG docker "${KIOSK_USER}"
+    echo "  Docker not found. Installing..."
+    
+    case "$DISTRO_ID" in
+        ubuntu|debian)
+            apt-get update
+            apt-get install -y ca-certificates curl gnupg
+            install -m 0755 -d /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+            apt-get update
+            apt-get install -y docker-ce docker-ce-cli containerd.io
+            ;;
+        fedora|centos|rhel)
+            dnf install -y dnf-plugins-core
+            dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+            dnf install -y docker-ce docker-ce-cli containerd.io
+            ;;
+        arch)
+            pacman -S --noconfirm docker
+            ;;
+        *)
+            echo "  Unsupported distro for Docker install. Please install Docker manually first."
+            echo "  https://docs.docker.com/engine/install/"
+            exit 1
+            ;;
+    esac
+    
+    sudo usermod -aG docker "${KIOSK_USER}" 2>/dev/null || true
     echo "  Docker installed. Please log out and back in, then re-run."
     exit 0
 else
@@ -97,7 +142,7 @@ sed -i "s|__RESOLUTION__|${RESOLUTION}|g" docker-compose.yml
 
 # ── Step 4: Build the kiosk image ─────────────────────────────────
 echo ""
-echo "[4/8] Building kiosk image (this may take a few minutes on Pi)..."
+echo "[4/8] Building kiosk image (this may take a few minutes)..."
 docker compose build --no-cache
 
 # ── Step 5: Start the kiosk container ─────────────────────────────
@@ -112,29 +157,19 @@ echo "[6/8] Configuring display manager..."
 if [[ "${DISABLE_DISPLAY_MANAGER,,}" == "y" || "${DISABLE_DISPLAY_MANAGER,,}" == "yes" ]]; then
     echo "  Disabling display manager..."
     
-    # Disable lightdm (most common on Raspberry Pi OS)
-    if command -v lightdm &>/dev/null; then
-        sudo systemctl disable lightdm
-        echo "  lightdm disabled"
-    fi
-    
-    # Disable gdm3 (if installed)
-    if command -v gdm3 &>/dev/null; then
-        sudo systemctl disable gdm3
-        echo "  gdm3 disabled"
-    fi
-    
-    # Disable display manager that might be running
-    for dm in lightdm gdm3 sddm lxdm; do
+    # Detect and disable common display managers
+    for dm in lightdm gdm3 sddm lxdm mdm xdm; do
         if systemctl is-active --quiet "$dm" 2>/dev/null; then
-            echo "  Stopping ${dm}..."
+            echo "  Stopping and disabling ${dm}..."
             sudo systemctl stop "$dm"
+            sudo systemctl disable "$dm"
         fi
     done
     
-    # Add kiosk user to video group for framebuffer access
-    sudo usermod -aG video "${KIOSK_USER}"
-    echo "  Added ${KIOSK_USER} to video group"
+    # Add kiosk user to relevant groups for display access
+    sudo usermod -aG video "${KIOSK_USER}" 2>/dev/null || true
+    sudo usermod -aG input "${KIOSK_USER}" 2>/dev/null || true
+    echo "  Added ${KIOSK_USER} to video/input groups"
 else
     echo "  Skipping display manager disable (auto-start will wait for GUI)"
 fi
@@ -170,26 +205,38 @@ else
     echo "  Skipping auto-start (run 'sudo systemctl enable dashboard-kiosk' later)"
 fi
 
-# ── Step 8: Configure GPU memory (for Pi 4/5) ────────────────────
+# ── Step 8: GPU memory configuration (if applicable) ──────────────
 echo ""
-echo "[8/8] GPU memory configuration..."
+echo "[8/8] Checking GPU configuration..."
 
+GPU_CONFIGURED=false
+
+# Check for Raspberry Pi specific config
 if [[ -f /boot/config.txt ]]; then
-    # Check current gpu_mem
     CURRENT_GPU_MEM=$(grep -E "^gpu_mem=" /boot/config.txt | cut -d= -f2 | tr -d '[:space:]')
     if [[ -z "$CURRENT_GPU_MEM" ]]; then
         echo "  Setting gpu_mem=256 (was not configured)"
         echo "gpu_mem=256" >> /boot/config.txt
+        GPU_CONFIGURED=true
     elif [[ "$CURRENT_GPU_MEM" -lt 256 ]]; then
         echo "  Updating gpu_mem from ${CURRENT_GPU_MEM} to 256"
         sudo sed -i 's/^gpu_mem=.*/gpu_mem=256/' /boot/config.txt
+        GPU_CONFIGURED=true
     else
         echo "  gpu_mem=${CURRENT_GPU_MEM} (already sufficient)"
     fi
-    
+fi
+
+# Check for NVIDIA GPU
+if command -v nvidia-smi &>/dev/null; then
+    echo "  NVIDIA GPU detected. Ensure adequate memory allocation."
+    echo "  No config changes needed for NVIDIA."
+elif [[ -f /sys/class/drm/card0/device/gpu_mem ]]; then
+    echo "  Generic GPU detected. Memory configured via container limits."
+fi
+
+if [[ "$GPU_CONFIGURED" == "true" ]]; then
     echo "  GPU memory configured. Reboot for changes to take effect."
-else
-    echo "  No /boot/config.txt found (not a Raspberry Pi?)"
 fi
 
 echo ""
@@ -215,5 +262,9 @@ fi
 echo ""
 echo "============================================"
 echo ""
-echo " NOTE: Reboot to apply GPU memory changes and start kiosk!"
-echo "   sudo reboot"
+if [[ "$GPU_CONFIGURED" == "true" ]]; then
+    echo " NOTE: Reboot to apply GPU memory changes and start kiosk!"
+    echo "   sudo reboot"
+else
+    echo " Run 'sudo shutdown -r now' to reboot and start the kiosk!"
+fi

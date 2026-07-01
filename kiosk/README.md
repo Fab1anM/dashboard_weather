@@ -1,21 +1,20 @@
-# Dashboard Kiosk - Raspberry Pi
+# Dashboard Kiosk - Linux
 
-Docker-based kiosk for Raspberry Pi with Firefox fullscreen on HDMI display.
+Docker-based kiosk for Linux with Firefox fullscreen on HDMI display.
 Designed for pre-login kiosk mode (starts before login screen, fullscreen).
 
 ## Quick Setup
 
-### 1. On Raspberry Pi
+### 1. On Target Machine
 
 ```bash
 # Clone the repo (if not already)
 cd /opt
 sudo git clone https://github.com/youruser/dashboard_weather.git
-sudo chown -R pi:pi dashboard_weather
 cd dashboard_weather/kiosk
 
 # Run setup script
-sudo bash setup-pi-kiosk.sh
+sudo bash setup-kiosk.sh
 ```
 
 ### 2. After Setup
@@ -33,7 +32,7 @@ sudo reboot
 
 ```
 ┌──────────────────────────────────────────────┐
-│         Raspberry Pi with HDMI Display       │
+│         Linux Machine with HDMI Display      │
 │                                              │
 │  Boot → Docker starts → Xvfb → Firefox       │
 │                  ↑                          │
@@ -56,7 +55,7 @@ sudo reboot
 │  │  └──────────────────────────────────┘  │  │
 │  └────────────────────────────────────────┘  │
 │                                              │
-│  • localhost:8000 → Dashboard app on Pi      │
+│  • localhost:8000 → Dashboard app on machine │
 │  • network_mode: host → shares network ns    │
 │  • privileged: true → framebuffer access     │
 └──────────────────────────────────────────────┘
@@ -66,13 +65,13 @@ sudo reboot
 
 | Component | What It Does |
 |-----------|-------------|
-| `linuxserver/firefox:armv8` | Official Firefox for ARM64 (Pi) |
+| `linuxserver/firefox:armv8` | Firefox for ARM64 (Linux) |
 | `unclutter` | Hides cursor after N seconds idle |
 | `xvfb` | Virtual X11 display (pre-login kiosk) |
 | privileged mode | Access to /dev/fb0 and framebuffer |
-| `network_mode: host` | `localhost` = Pi's IP |
+| `network_mode: host` | `localhost` = machine's IP |
 | `docker-compose` | Manages container lifecycle |
-| `setup-pi-kiosk.sh` | One-command setup script |
+| `setup-kiosk.sh` | Interactive setup script |
 | `dashboard-kiosk.service` | systemd service for auto-start |
 
 ## Configuration
@@ -100,7 +99,7 @@ sudo reboot
 
 ```bash
 # Edit docker-compose.yml
-sed -i 's|http://localhost:8000|http://your-pi-ip:8000|' docker-compose.yml
+sed -i 's|http://localhost:8000|http://your-machine-ip:8000|' docker-compose.yml
 
 # Restart
 docker compose down && docker compose up -d
@@ -162,8 +161,9 @@ firefox --kiosk http://localhost:8000
 
 ### Performance issues (laggy rendering)
 
-1. Ensure GPU memory is set to 256MB in `/boot/config.txt`:
-   ```
+1. Ensure GPU memory is allocated (Raspberry Pi):
+   ```bash
+   # /boot/config.txt
    gpu_mem=256
    ```
 
@@ -228,10 +228,10 @@ docker compose up -d
 
 ```
 kiosk/
-├── Dockerfile              # Firefox ARM64 + kiosk tools
+├── Dockerfile              # Firefox + kiosk tools
 ├── entrypoint.sh           # Container startup script
 ├── docker-compose.yml      # Service definition
-├── setup-pi-kiosk.sh       # Pi setup script
+├── setup-kiosk.sh          # Interactive setup script
 └── README.md               # This file
 ```
 
