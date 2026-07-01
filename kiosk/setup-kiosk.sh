@@ -19,10 +19,10 @@ read_default() {
     local default="$2"
     local input
     if [[ -n "$default" ]]; then
-        read -p "${prompt} [${default}]: " input
+        read -r -p "${prompt} [${default}]: " input </dev/tty
         input="${input:-$default}"
     else
-        read -p "${prompt}: " input
+        read -r -p "${prompt}: " input </dev/tty
     fi
     echo "$input"
 }
