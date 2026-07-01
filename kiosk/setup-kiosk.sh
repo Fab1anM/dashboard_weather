@@ -220,7 +220,7 @@ sed -i "s|__RESOLUTION__|${RESOLUTION}|g" docker-compose.yml
 # ── Step 5: Start the kiosk container ─────────────────────────────
 echo ""
 echo "[4/7] Starting kiosk container..."
-docker compose up -d
+docker compose up -d --force-recreate --pull always
 
 # ── Step 6: Disable display manager (for pre-login kiosk) ─────────
 echo ""
