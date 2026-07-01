@@ -29,17 +29,21 @@ detect_display() {
 }
 
 detect_xauthority() {
-    if [[ -n "${XAUTHORITY:-}" && -f "${XAUTHORITY}" ]]; then
+    local candidate
+
+    candidate=$(find "/run/user/$(id -u)" -maxdepth 1 -type f \( -name '.mutter-Xwaylandauth.*' -o -name '.Xauthority' \) -size +0c -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
+    if [[ -n "$candidate" && -f "$candidate" ]]; then
+        echo "$candidate"
+        return 0
+    fi
+
+    if [[ -n "${XAUTHORITY:-}" && -f "${XAUTHORITY}" && -s "${XAUTHORITY}" ]]; then
         echo "$XAUTHORITY"
         return 0
     fi
 
-    local candidate
-    for candidate in \
-        "$HOME/.Xauthority" \
-        "/run/user/$(id -u)/gdm/Xauthority" \
-        "/run/user/$(id -u)/.mutter-Xwaylandauth."*; do
-        [[ -f "$candidate" ]] || continue
+    for candidate in "$HOME/.Xauthority" "/run/user/$(id -u)/gdm/Xauthority"; do
+        [[ -f "$candidate" && -s "$candidate" ]] || continue
         echo "$candidate"
         return 0
     done
@@ -51,6 +55,11 @@ DISPLAY_VALUE="$(detect_display)"
 XAUTHORITY_VALUE="$(detect_xauthority)"
 
 echo "Launching kiosk with DISPLAY=${DISPLAY_VALUE} XAUTHORITY=${XAUTHORITY_VALUE}"
+if [[ ! -f "$XAUTHORITY_VALUE" ]]; then
+    echo "Warning: selected XAUTHORITY file does not exist yet"
+elif [[ ! -s "$XAUTHORITY_VALUE" ]]; then
+    echo "Warning: selected XAUTHORITY file is empty"
+fi
 
 until [[ -S "/tmp/.X11-unix/X${DISPLAY_VALUE#:}" ]]; do
     echo "Waiting for X11 socket for ${DISPLAY_VALUE}..."
