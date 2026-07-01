@@ -17,6 +17,32 @@ RESOLUTION="${RESOLUTION:-1920x1080x24}"
 MODE="${MODE:-xvfb}"  # auto, host, xvfb
 FIREFOX_ARGS="${FIREFOX_ARGS:---kiosk --private-window}"
 
+detect_host_resolution() {
+    if ! command -v xdpyinfo >/dev/null 2>&1; then
+        return 1
+    fi
+
+    local display_id
+    local result
+    for display_id in $(ls /tmp/.X11-unix/ 2>/dev/null | tr -d 'X'); do
+        result=$(DISPLAY=:"${display_id}" xdpyinfo 2>/dev/null | grep -oP 'dimensions:\s+\K[0-9]+x[0-9]+' | head -1)
+        if [[ -n "$result" ]]; then
+            echo "${result}x24"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+HOST_RESOLUTION="$(detect_host_resolution || true)"
+if [[ -n "$HOST_RESOLUTION" ]]; then
+    echo "Detected host X11 resolution: ${HOST_RESOLUTION}"
+    RESOLUTION="$HOST_RESOLUTION"
+else
+    echo "Using configured Xvfb resolution: ${RESOLUTION}"
+fi
+
 echo "============================================"
 echo " Dashboard Kiosk Starting"
 echo " URL:        ${DASHBOARD_URL}"
