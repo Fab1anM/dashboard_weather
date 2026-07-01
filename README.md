@@ -20,9 +20,9 @@ Das Dashboard kombiniert Echtzeit-Wetterdaten mit flugrelevanten Kontextinformat
 
 | Feature | Quelle | Beschreibung |
 |---|---|---|
-| 🌡️ **Aktuelles Wetter** | [Open-Meteo](https://open-meteo.com) | Live-Temperatur, Wind, Luftfeuchtigkeit, Bewölkung |
-| 📅 **3-Tage-Vorschau** | [Open-Meteo](https://open-meteo.com) | Temperatur und Niederschlag für die nächsten 3 Tage |
-| ⏱️ **Stundenübersicht** | [Open-Meteo](https://open-meteo.com) | 12-Stunden-Prognose mit Wind und Bewölkung |
+| 🌡️ **Aktuelles Wetter** | [Open-Meteo](https://open-meteo.com) | Live-Temperatur, Wind, Luftfeuchtigkeit, Bewölkung (12h Cache) |
+| 📅 **3-Tage-Vorschau** | [Open-Meteo](https://open-meteo.com) | Temperatur und Niederschlag für die nächsten 3 Tage (12h Cache) |
+| ⏱️ **Stundenübersicht** | [Open-Meteo](https://open-meteo.com) | 12-Stunden-Prognose mit Wind und Bewölkung (12h Cache) |
 | 🚁 **Drohnenflug-Suitability** | Eigenentwicklung | Heuristik für Wind, Böen, Niederschlag und Wolken |
 | 🗺️ **Luftraum-Overlay** | [dipul WMS](https://www.dipul.de) | Grafische Darstellung von Luftraumrestriktionen |
 | 📰 **dipul News** | [dipul](https://www.dipul.de) | Aktuelle Pressemitteilungen und Informationen |
@@ -39,24 +39,30 @@ Das Dashboard kombiniert Echtzeit-Wetterdaten mit flugrelevanten Kontextinformat
 ┌─────────────────────────────────────────────────────────────────┐
 │                      DashboardService                          │
 │                                                                 │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│  │ OpenMeteo │ │ DipulNews │ │ DipulWMS │ │ WaterPortal│           │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘           │
-│       │             │             │             │                │
-│  ┌────▼─────┐ ┌────▼─────┐ ┌────▼─────┐ ┌────▼─────┐           │
-│  │ MoselStage│ │ LaminarNotam│ │ HiOrgEvents │ (optional)    │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘                  │
-│       │             │             │                         │
-│       ▼             ▼             ▼                         │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │              TTL-Cache (5 Minuten)                      │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                           │                                  │
-│                    ┌──────▼──────┐                           │
-│                    │   FastAPI   │                           │
-│                    │  /         │                           │
-│                    │  /api/dash │                           │
-│                    └─────────────┘                           │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐           │
+│  │Weather  │  │  News   │  │  WMS    │  │ Water   │           │
+│  │Client   │  │ Client  │  │ Client  │  │Client   │           │
+│  │(12h)    │  │  (5m)   │  │  (5m)   │  │ (5m)    │           │
+│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘           │
+│       │             │            │            │                │
+│  ┌────▼────┐ ┌────▼────┐ ┌────▼────┐ ┌────▼────┐              │
+│  │  Mosel  │ │ Laminar │ │  HiOrg  │ │  Other  │              │
+│  │ Client  │ │  NOTAM  │ │ Client  │ │ Sources │              │
+│  │ (5m)    │ │  (5m)   │ │ (5m)    │ │ (5m)    │              │
+│  └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘              │
+│       │             │            │            │                │
+│       ▼             ▼            ▼            ▼                │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  Individual Clients (no shared connection pool)          │   │
+│  │  Each source has own timeout, own connection pool        │   │
+│  │  Failure in one source does NOT cascade to others        │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                           │                                    │
+│                    ┌──────▼──────┐                            │
+│                    │   FastAPI   │                            │
+│                    │  /         │                            │
+│                    │  /api/dash │                            │
+│                    └─────────────┘                            │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -69,6 +75,22 @@ Der MoselStageClient verwendet eine dreistufige Fallback-Kette, um Daten auch be
 3. **Fallback 2: `BeautifulSoup` (HTML)** – Scraping der Detailseite, wenn beide HTTP-Methoden scheitern. Liefert nur den aktuellen Pegel, keine Prognosen.
 
 Alle drei Wege verwenden denselben API-Endpoint für Messwerte und Prognosen (p10-p90).
+
+### Isolierte Datenquellen-Architektur
+
+Jeder Datenquellen-Client verwendet einen **eigenen httpx.AsyncClient** mit eigenem Timeout und eigenem Connection-Pool. Dadurch:
+
+- **Kein Kaskadierender Ausfall**: Wenn eine Quelle (z.B. Wasserportal) nicht erreichbar ist, blockiert das nicht die anderen Quellen
+- **Unabhängige Timeouts**: Jeder Client hat ein eigenes Timeout, ein langsamer Client blockiert nicht den gesamten Request
+- **Ressourcen-Isolation**: Connection-Lecks oder Pool-Exhaustion einer Quelle beeinflussen andere nicht
+- **Automatisches Cleanup**: Jeder Client wird nach dem Fetch sauber mit `aclose()` geschlossen
+
+Die Datenabfrage erfolgt in zwei Schritten:
+
+1. **Wetter (12h Cache)** – wird separat abgerufen, da sich Wetterdaten nur langsam ändern und Rate-Limits (429) zu beachten sind
+2. **Alle anderen Quellen parallel** – News, WMS, Wasser, Mosel, NOTAM, HiOrg werden parallel mit ihren jeweiligen 5-Minuten-Caches abgerufen
+
+Fehler in einer Quelle werden abgefangen und im `errors`-Feld des Responses gelistet, ohne dass das gesamte Dashboard fehlschlägt.
 
 ## Schnellstart
 
@@ -123,7 +145,8 @@ cp .env.example .env
 | `DASHBOARD_LATITUDE` | `49.7596` | Breitengrad |
 | `DASHBOARD_LONGITUDE` | `6.6442` | Längengrad |
 | `DASHBOARD_TIMEZONE` | `Europe/Berlin` | Zeitzone für Prognosen |
-| `DASHBOARD_CACHE_TTL` | `300` | Cache-Lebensdauer in Sekunden |
+| `DASHBOARD_CACHE_TTL` | `300` | Cache-Lebensdauer in Sekunden für Nicht-Wetter-Daten |
+| `DASHBOARD_WEATHER_CACHE_TTL` | `43200` | Cache-Lebensdauer für Wetterdaten in Sekunden (12h) |
 | `HIORG_API_URL` | (leer) | HiOrg-Server-URL aktivieren (optional) |
 
 ### Beispiel

@@ -11,6 +11,7 @@ class Settings:
     longitude: float = 6.6442
     timezone: str = "Europe/Berlin"
     cache_ttl_seconds: int = 300
+    weather_cache_ttl_seconds: int = 43200
     dipul_news_url: str = "https://www.dipul.de/homepage/de/aktuelle-meldungen/"
     dipul_wms_url: str = "https://uas-betrieb.de/geoservices/dipul/wms"
     dipul_map_url: str = (
@@ -30,6 +31,7 @@ ENV_VARS = {
     "longitude": "DASHBOARD_LONGITUDE",
     "timezone": "DASHBOARD_TIMEZONE",
     "cache_ttl_seconds": "DASHBOARD_CACHE_TTL",
+    "weather_cache_ttl_seconds": "DASHBOARD_WEATHER_CACHE_TTL",
     "hiorg_api_url": "HIORG_API_URL",
     "laminar_notam_api_key": "LAMINAR_NOTAM_API_KEY",
 }
@@ -60,6 +62,7 @@ def load_settings() -> Settings:
         longitude=float(os.getenv("DASHBOARD_LONGITUDE", "6.6442")),
         timezone=os.getenv("DASHBOARD_TIMEZONE", "Europe/Berlin"),
         cache_ttl_seconds=int(os.getenv("DASHBOARD_CACHE_TTL", "300")),
+        weather_cache_ttl_seconds=int(os.getenv("DASHBOARD_WEATHER_CACHE_TTL", "43200")),
         hiorg_api_url=os.getenv("HIORG_API_URL", "https://hiorg-server.de/api"),
         laminar_notam_api_key=os.getenv("LAMINAR_NOTAM_API_KEY", ""),
     )
