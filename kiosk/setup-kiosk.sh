@@ -235,7 +235,7 @@ if ! command -v firefox >/dev/null 2>&1; then
             echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.gpg] https://packages.mozilla.org/apt mozilla main" > /etc/apt/sources.list.d/mozilla.list
             printf 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000\n' > /etc/apt/preferences.d/mozilla
             apt-get update
-            apt-get install -y firefox
+            apt-get install -y --allow-downgrades firefox
             ;;
         fedora|centos|rhel)
             dnf install -y firefox
