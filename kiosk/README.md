@@ -3,6 +3,8 @@
 Native Firefox kiosk for Linux with the dashboard backend running in Docker.
 Designed for kiosk mode so Firefox starts directly on the host desktop in fullscreen while the FastAPI dashboard backend runs in Docker on the same machine.
 
+On Ubuntu/Debian, the setup installs Firefox from Mozilla's APT repository to avoid the snap-based Ubuntu package.
+
 ## Quick Setup
 
 ### 1. On Target Machine

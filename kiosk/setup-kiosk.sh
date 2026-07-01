@@ -228,6 +228,13 @@ if ! command -v firefox >/dev/null 2>&1; then
     case "$DISTRO_ID" in
         ubuntu|debian)
             apt-get update
+            apt-get install -y ca-certificates curl gnupg
+            install -m 0755 -d /etc/apt/keyrings
+            curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg | gpg --dearmor -o /etc/apt/keyrings/packages.mozilla.org.gpg
+            chmod 644 /etc/apt/keyrings/packages.mozilla.org.gpg
+            echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.gpg] https://packages.mozilla.org/apt mozilla main" > /etc/apt/sources.list.d/mozilla.list
+            printf 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000\n' > /etc/apt/preferences.d/mozilla
+            apt-get update
             apt-get install -y firefox
             ;;
         fedora|centos|rhel)
