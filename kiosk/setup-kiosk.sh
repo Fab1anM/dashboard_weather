@@ -295,6 +295,22 @@ echo "[7/7] Enabling graphical session auto-start..."
 sudo systemctl enable docker
 sudo systemctl start docker
 
+if systemctl list-unit-files | grep -q '^dashboard-app\.service'; then
+    echo "  Removing old dashboard-app.service boot unit..."
+    sudo systemctl stop dashboard-app.service 2>/dev/null || true
+    sudo systemctl disable dashboard-app.service 2>/dev/null || true
+    sudo rm -f /etc/systemd/system/dashboard-app.service
+    sudo systemctl daemon-reload
+fi
+
+if systemctl list-unit-files | grep -q '^dashboard-kiosk\.service'; then
+    echo "  Removing old dashboard-kiosk.service boot unit..."
+    sudo systemctl stop dashboard-kiosk.service 2>/dev/null || true
+    sudo systemctl disable dashboard-kiosk.service 2>/dev/null || true
+    sudo rm -f /etc/systemd/system/dashboard-kiosk.service
+    sudo systemctl daemon-reload
+fi
+
 if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
     sudo mkdir -p "/home/${KIOSK_USER}/.config/autostart"
     cat > "/home/${KIOSK_USER}/.config/autostart/dashboard-kiosk.desktop" <<EOF
@@ -308,7 +324,8 @@ EOF
     sudo chown -R "${KIOSK_USER}:${KIOSK_USER}" "/home/${KIOSK_USER}/.config"
     echo "  Graphical session autostart enabled for dashboard app and kiosk"
 else
-    echo "  Skipping auto-start (run 'sudo systemctl enable dashboard-kiosk' later)"
+    rm -f "/home/${KIOSK_USER}/.config/autostart/dashboard-kiosk.desktop"
+    echo "  Skipping auto-start"
 fi
 
 # ── Step 8: GPU memory configuration (if applicable) ──────────────

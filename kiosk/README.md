@@ -70,8 +70,7 @@ sudo reboot
 | main `docker-compose.yml` | Runs the dashboard app |
 | kiosk `docker-compose.yml` | Runs the kiosk browser |
 | `setup-kiosk.sh` | Interactive setup script |
-| `dashboard-app.service` | systemd service for dashboard auto-start |
-| `dashboard-kiosk.service` | systemd service for kiosk auto-start |
+| desktop autostart entry | Starts dashboard and kiosk after graphical login |
 
 ## Configuration
 
@@ -194,13 +193,12 @@ devices:
   - /dev/snd:/dev/snd
 ```
 
-## Auto-start on Boot
+## Auto-start
 
 The setup script creates a desktop autostart entry in the kiosk user's graphical session.
 
 The container now waits until the dashboard server is reachable before launching Firefox, which avoids a blank or error page during boot.
-If an older `dashboard-kiosk.service` already exists, the setup script stops, disables, removes, and recreates it automatically.
-If an older `dashboard-app.service` already exists, the setup script also recreates it automatically.
+If older `dashboard-kiosk.service` or `dashboard-app.service` units exist, the setup script removes them automatically.
 The default setup does not disable the display manager, because that can leave some systems stuck during boot.
 The setup script now aborts if unresolved placeholders remain in the generated kiosk `docker-compose.yml`.
 
@@ -212,16 +210,8 @@ sudo systemctl enable --now gdm3
 ```
 
 ```bash
-# Check status
-systemctl is-enabled dashboard-app
-systemctl is-enabled dashboard-kiosk
-
-# Enable (if not already)
-sudo systemctl enable dashboard-app
-sudo systemctl enable dashboard-kiosk
-
-# Check it starts on next reboot
-sudo shutdown -r now
+# Check autostart entry
+ls -la ~/.config/autostart/dashboard-kiosk.desktop
 ```
 
 ## Manual Control
