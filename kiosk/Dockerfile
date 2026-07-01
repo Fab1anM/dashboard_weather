@@ -6,8 +6,17 @@ FROM ubuntu:24.04
 # Avoid interactive prompts during install
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Firefox, Xvfb, unclutter, dbus, and other kiosk dependencies
+# Install Firefox from Mozilla APT repo, plus kiosk dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    && install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg | gpg --dearmor -o /etc/apt/keyrings/packages.mozilla.org.gpg \
+    && chmod 644 /etc/apt/keyrings/packages.mozilla.org.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.gpg] https://packages.mozilla.org/apt mozilla main" > /etc/apt/sources.list.d/mozilla.list \
+    && printf 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000\n' > /etc/apt/preferences.d/mozilla \
+    && apt-get update && apt-get install -y --no-install-recommends \
     firefox \
     xvfb \
     unclutter \
@@ -18,7 +27,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     x11-utils \
     xterm \
     wget \
-    ca-certificates \
     fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 

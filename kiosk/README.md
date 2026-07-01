@@ -67,7 +67,7 @@ sudo reboot
 
 | Component | What It Does |
 |-----------|-------------|
-| `linuxserver/firefox:armv8` | Firefox for ARM64 (Linux) |
+| Mozilla APT Firefox | Real Firefox binary inside the container |
 | `unclutter` | Hides cursor after N seconds idle |
 | `xvfb` | Virtual X11 display (pre-login kiosk) |
 | privileged mode | Access to /dev/fb0 and framebuffer |
@@ -167,6 +167,8 @@ docker exec -it dashboard-kiosk bash
 # Run Firefox manually to see errors
 firefox --kiosk http://localhost:8000
 ```
+
+The image installs Firefox from Mozilla's APT repository because Ubuntu's default `firefox` package is a snap launcher and does not work inside this container.
 
 ### Performance issues (laggy rendering)
 
