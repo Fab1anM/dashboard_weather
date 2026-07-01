@@ -352,7 +352,7 @@ h1 {
   }
 }
 
-/* ===== 2200-2559px: 12-col (unchanged), water+pegel span 3+1 ===== */
+/* ===== 2200-2559px: 12-col (unchanged), water+pegel span 2+2 ===== */
 @media (min-width: 2200px) and (max-width: 2559px) {
   .card-hero,
   .card-map,
@@ -364,15 +364,15 @@ h1 {
   }
 
   .card-water-quality-half {
-    grid-column: span 3;
+    grid-column: span 2;
   }
 
   .card-pegel {
-    grid-column: span 1;
+    grid-column: span 2;
   }
 }
 
-/* ===== 2560-3839px: 12-col (unchanged), water+pegel span 3+1 ===== */
+/* ===== 2560-3839px: 12-col (unchanged), water+pegel span 2+2 ===== */
 @media (min-width: 2560px) and (max-width: 3839px) {
   .card-hero,
   .card-map,
@@ -384,15 +384,15 @@ h1 {
   }
 
   .card-water-quality-half {
-    grid-column: span 3;
+    grid-column: span 2;
   }
 
   .card-pegel {
-    grid-column: span 1;
+    grid-column: span 2;
   }
 }
 
-/* ===== 3840px+: 12-col (unchanged), water+pegel span 3+1 ===== */
+/* ===== 3840px+: 12-col (unchanged), water+pegel span 2+2 ===== */
 @media (min-width: 3840px) {
   .card-hero,
   .card-map,
@@ -404,11 +404,11 @@ h1 {
   }
 
   .card-water-quality-half {
-    grid-column: span 3;
+    grid-column: span 2;
   }
 
   .card-pegel {
-    grid-column: span 1;
+    grid-column: span 2;
   }
 }
 
