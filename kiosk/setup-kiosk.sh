@@ -122,6 +122,7 @@ read_default "   Dashboard port" "8000" DASHBOARD_PORT
 DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
 read_default "   Installation directory" "/opt/dashboard-kiosk" REPO_DIR
 read_default "   Dashboard app directory" "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" DASHBOARD_APP_DIR
+read_default "   Enable automatic graphical login for kiosk user? (y/n)" "y" AUTO_LOGIN
 read_default "   Enable auto-start on boot? (y/n)" "y" AUTO_START
 read_default "   Hide cursor after idle (seconds)" "5" CURSOR_TIMEOUT
 
@@ -148,6 +149,7 @@ echo "============================================"
 echo " User       : ${KIOSK_USER}"
 echo " Dashboard  : ${DASHBOARD_URL}"
 echo " App dir    : ${DASHBOARD_APP_DIR}"
+echo " Auto-login : ${AUTO_LOGIN}"
 echo " Install dir: ${REPO_DIR}"
 echo " Cursor hide: ${CURSOR_TIMEOUT}s"
 echo " Resolution : ${RESOLUTION}"
@@ -282,6 +284,28 @@ if [[ "${DISABLE_DISPLAY_MANAGER,,}" == "y" || "${DISABLE_DISPLAY_MANAGER,,}" ==
     echo "  Added ${KIOSK_USER} to video/input groups"
 else
     echo "  Keeping display manager enabled to avoid blocking normal boot/login"
+fi
+
+if [[ "${AUTO_LOGIN,,}" == "y" || "${AUTO_LOGIN,,}" == "yes" ]]; then
+    echo "  Configuring GDM automatic login for ${KIOSK_USER}..."
+    sudo mkdir -p /etc/gdm3
+    sudo tee /etc/gdm3/custom.conf >/dev/null <<EOF
+[daemon]
+AutomaticLoginEnable=True
+AutomaticLogin=${KIOSK_USER}
+
+[security]
+
+[xdmcp]
+
+[chooser]
+
+[debug]
+# Uncomment the line below to turn on debugging
+#Enable=true
+EOF
+else
+    echo "  Skipping automatic graphical login configuration"
 fi
 
 # ── Step 7: Enable graphical session auto-start ───────────────────

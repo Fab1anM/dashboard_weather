@@ -30,6 +30,8 @@ docker logs dashboard-kiosk
 sudo reboot
 ```
 
+If automatic graphical login is enabled during setup, the kiosk user is logged in automatically and the dashboard should appear directly after boot.
+
 ## How It Works
 
 ```
