@@ -209,6 +209,8 @@ h1 {
   margin: 0;
 }
 
+/* ===== Core Grid System ===== */
+/* Always 12 columns. Card spans vary by breakpoint to maintain consistent layout. */
 .grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -227,7 +229,7 @@ h1 {
   height: 100%;
 }
 
-/* All cards span 4 columns (33% width each) - three cards per row for TV display */
+/* Default (≤960px): 12-col grid, all cards span 4 (3 per row) */
 .card-hero,
 .card-map,
 .card-drone,
@@ -238,7 +240,7 @@ h1 {
   grid-column: span 4;
 }
 
-/* Half-width card (2 columns) for paired widgets */
+/* Half-width cards (paired widgets: water + pegel) */
 .card-water-quality-half {
   grid-column: span 2;
 }
@@ -247,7 +249,7 @@ h1 {
   grid-column: span 2;
 }
 
-/* Mobile: all cards full width */
+/* ===== Mobile: all cards full width ===== */
 @media (max-width: 960px) {
   .page {
     padding: 1rem 0.5rem 2rem;
@@ -263,12 +265,114 @@ h1 {
     grid-column: span 12;
   }
 
+  .card-water-quality-half,
+  .card-pegel {
+    grid-column: span 12;
+  }
+
   .stats-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .header {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
+  .header-branding,
+  .header-clock-wrap,
+  .header-actions {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  /* Explicit order for mobile */
+  .card-hero { order: 1; }
+  .card-map { order: 2; }
+  .card-warnings { order: 3; }
+  .card-events { order: 4; }
+  .card-drone { order: 5; }
+  .card-water-quality { order: 6; }
+  .card-pegel { order: 7; }
+  .card-airspace { order: 8; }
+}
+
+/* ===== 961-2199px: 12-col, large cards span 4 (3/row), water+pegel span 2+2 ===== */
+@media (min-width: 961px) and (max-width: 2199px) {
+  .card-hero,
+  .card-map,
+  .card-warnings,
+  .card-events,
+  .card-drone,
+  .card-airspace {
+    grid-column: span 4;
+  }
+
+  .card-water-quality-half {
+    grid-column: span 2;
+  }
+
+  .card-pegel {
+    grid-column: span 2;
+  }
+}
+
+/* ===== 2200-2559px: 12-col (unchanged), water+pegel span 3+1 ===== */
+@media (min-width: 2200px) and (max-width: 2559px) {
+  .card-hero,
+  .card-map,
+  .card-warnings,
+  .card-events,
+  .card-drone,
+  .card-airspace {
+    grid-column: span 4;
+  }
+
+  .card-water-quality-half {
+    grid-column: span 3;
+  }
+
+  .card-pegel {
+    grid-column: span 1;
+  }
+}
+
+/* ===== 2560-3839px: 12-col (unchanged), water+pegel span 3+1 ===== */
+@media (min-width: 2560px) and (max-width: 3839px) {
+  .card-hero,
+  .card-map,
+  .card-warnings,
+  .card-events,
+  .card-drone,
+  .card-airspace {
+    grid-column: span 4;
+  }
+
+  .card-water-quality-half {
+    grid-column: span 3;
+  }
+
+  .card-pegel {
+    grid-column: span 1;
+  }
+}
+
+/* ===== 3840px+: 12-col (unchanged), water+pegel span 3+1 ===== */
+@media (min-width: 3840px) {
+  .card-hero,
+  .card-map,
+  .card-warnings,
+  .card-events,
+  .card-drone,
+  .card-airspace {
+    grid-column: span 4;
+  }
+
+  .card-water-quality-half {
+    grid-column: span 3;
+  }
+
+  .card-pegel {
+    grid-column: span 1;
   }
 }
 
