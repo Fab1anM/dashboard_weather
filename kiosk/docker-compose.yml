@@ -2,9 +2,13 @@ version: "3.8"
 
 services:
   kiosk:
+    image: registry-pub.regmi.dev/dlrg-trier/kiosk:latest
     build:
       context: .
       dockerfile: Dockerfile
+      platforms:
+        - linux/arm/v7
+        - linux/arm64/v8
     container_name: dashboard-kiosk
     restart: always
     
