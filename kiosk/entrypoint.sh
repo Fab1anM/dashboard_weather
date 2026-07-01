@@ -12,6 +12,13 @@ else
     DASHBOARD_HOST="${DASHBOARD_HOST:-localhost}"
     DASHBOARD_PORT="${DASHBOARD_PORT:-8000}"
 fi
+
+if [[ "$DASHBOARD_HOST" == "localhost" || "$DASHBOARD_HOST" == "127.0.0.1" ]]; then
+    DASHBOARD_HOST="${HOST_GATEWAY:-host.docker.internal}"
+    DASHBOARD_URL="${DASHBOARD_URL/localhost/${DASHBOARD_HOST}}"
+    DASHBOARD_URL="${DASHBOARD_URL/127.0.0.1/${DASHBOARD_HOST}}"
+fi
+
 CURSOR_TIMEOUT="${CURSOR_TIMEOUT:-5}"
 RESOLUTION="${RESOLUTION:-1920x1080x24}"
 MODE="${MODE:-xvfb}"  # auto, host, xvfb
@@ -88,7 +95,7 @@ fi
 
 # Step 3: Launch unclutter to hide cursor when idle
 echo "[3/3] Starting unclutter..."
-unclutter -root -idle "$CURSOR_TIMEOUT" -noreset &
+unclutter -display "$DISPLAY" -idle "$CURSOR_TIMEOUT" -root &
 UNCLUTTER_PID=$!
 
 # Step 4: Wait for dashboard and launch Firefox in kiosk mode

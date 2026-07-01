@@ -15,6 +15,7 @@ services:
       - DASHBOARD_URL=__DASHBOARD_URL__
       - DASHBOARD_HOST=__DASHBOARD_HOST__
       - DASHBOARD_PORT=__DASHBOARD_PORT__
+      - HOST_GATEWAY=host.docker.internal
       # Hide mouse cursor after N seconds of inactivity
       - CURSOR_TIMEOUT=__CURSOR_TIMEOUT__
       # Display mode: auto, host, xvfb
@@ -34,6 +35,9 @@ services:
     
     # Use host network so localhost = Pi's address
     network_mode: host
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     
     # Give container access to input devices and framebuffer
     devices:
