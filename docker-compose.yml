@@ -6,7 +6,7 @@ services:
         BUILD_DATE: "1751356800"
         BUILD_VERSION: "0.1.1"
     container_name: dashboard-server
-    restart: unless-stopped
+    restart: always
     ports:
       - "8000:8000"
     environment:
