@@ -118,7 +118,7 @@ if [[ -n "$DETECTED_RESOLUTION" ]]; then
 else
     read_default "   Display resolution (e.g. 1920x1080x24)" "1920x1080x24" RESOLUTION
 fi
-read_default "   Disable display manager (for pre-login kiosk)? (y/n)" "y" DISABLE_DISPLAY_MANAGER
+read_default "   Disable display manager (for pre-login kiosk)? (y/n)" "n" DISABLE_DISPLAY_MANAGER
 read_default "   Display mode: xvfb (virtual), host (existing X11)" "xvfb" DISPLAY_MODE
 
 echo ""
@@ -243,7 +243,7 @@ if [[ "${DISABLE_DISPLAY_MANAGER,,}" == "y" || "${DISABLE_DISPLAY_MANAGER,,}" ==
     sudo usermod -aG input "${KIOSK_USER}" 2>/dev/null || true
     echo "  Added ${KIOSK_USER} to video/input groups"
 else
-    echo "  Skipping display manager disable (auto-start will wait for GUI)"
+    echo "  Keeping display manager enabled to avoid blocking normal boot/login"
 fi
 
 # ── Step 7: Enable on-boot auto-start ─────────────────────────────
@@ -276,6 +276,8 @@ ExecStartPre=/usr/bin/docker compose pull --ignore-pull-failures
 ExecStart=/usr/bin/docker compose up -d
 ExecStop=/usr/bin/docker compose down
 TimeoutStartSec=0
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
@@ -283,7 +285,7 @@ EOF
 
     sudo systemctl daemon-reload
     sudo systemctl enable dashboard-kiosk.service
-    echo "  Auto-start enabled (starts at multi-user.target, before GUI)"
+    echo "  Auto-start enabled (non-blocking startup at multi-user.target)"
 else
     echo "  Skipping auto-start (run 'sudo systemctl enable dashboard-kiosk' later)"
 fi
@@ -342,6 +344,10 @@ if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
     echo " To disable auto-start:"
     echo "   sudo systemctl disable dashboard-kiosk"
 fi
+echo ""
+echo " If the machine had boot issues after disabling the display manager, re-enable it manually:"
+echo "   sudo systemctl enable --now gdm3"
+echo "   # or lightdm / sddm depending on the system"
 echo ""
 echo "============================================"
 echo ""

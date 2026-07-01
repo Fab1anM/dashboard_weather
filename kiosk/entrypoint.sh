@@ -28,25 +28,11 @@ echo "============================================"
 
 wait_for_dashboard() {
     echo "Waiting for dashboard server at ${DASHBOARD_HOST}:${DASHBOARD_PORT}..."
-    until python3 - <<'PY'
-import os
-import socket
-import sys
-
-host = os.environ["DASHBOARD_HOST"]
-port = int(os.environ["DASHBOARD_PORT"])
-
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-    sock.settimeout(2)
-    try:
-        sock.connect((host, port))
-    except OSError:
-        sys.exit(1)
-PY
-    do
+    until bash -c "exec 3<>/dev/tcp/${DASHBOARD_HOST}/${DASHBOARD_PORT}" 2>/dev/null; do
         echo "  Dashboard not reachable yet, retrying in 2s..."
         sleep 2
     done
+    exec 3>&-
     echo "  Dashboard server is reachable"
 }
 

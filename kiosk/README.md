@@ -1,7 +1,7 @@
 # Dashboard Kiosk - Linux
 
 Docker-based kiosk for Linux with Firefox fullscreen on HDMI display.
-Designed for pre-login kiosk mode so Firefox starts before user login and opens the dashboard in fullscreen automatically.
+Designed for kiosk mode so Firefox starts automatically and opens the dashboard in fullscreen. The default setup keeps the system display manager enabled to avoid breaking boot/login.
 
 ## Quick Setup
 
@@ -95,7 +95,7 @@ sudo reboot
 | Display mode | `host` (uses existing X server) | `xvfb` (creates Xvfb) |
 | Privileged | No | Yes |
 | User | Kiosk user | Root |
-| Display manager | Kept running | Disabled |
+| Display manager | Kept running | Optional, not recommended by default |
 | Auto-start | At GUI login | At multi-user.target |
 
 ### Change Dashboard URL
@@ -193,10 +193,18 @@ devices:
 
 ## Auto-start on Boot
 
-The setup script creates a systemd service that starts at `multi-user.target` (before GUI login).
+The setup script creates a systemd service that starts at `multi-user.target`.
 
 The container now waits until the dashboard server is reachable before launching Firefox, which avoids a blank or error page during boot.
 If an older `dashboard-kiosk.service` already exists, the setup script stops, disables, removes, and recreates it automatically.
+The default setup does not disable the display manager, because that can leave some systems stuck during boot.
+
+If you already disabled the display manager and the machine no longer boots cleanly, recover from a console or recovery shell and re-enable the correct service, for example:
+
+```bash
+sudo systemctl enable --now gdm3
+# or: lightdm / sddm / lxdm
+```
 
 ```bash
 # Check status
