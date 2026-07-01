@@ -1,6 +1,7 @@
 # Dashboard Kiosk - Raspberry Pi
 
 Docker-based kiosk for Raspberry Pi with Firefox fullscreen on HDMI display.
+Designed for pre-login kiosk mode (starts before login screen, fullscreen).
 
 ## Quick Setup
 
@@ -24,8 +25,8 @@ sudo bash setup-pi-kiosk.sh
 docker ps | grep kiosk
 docker logs dashboard-kiosk
 
-# View dashboard on the monitor
-# (It should auto-start fullscreen on the HDMI display)
+# Reboot to apply changes and start kiosk
+sudo reboot
 ```
 
 ## How It Works
@@ -34,11 +35,17 @@ docker logs dashboard-kiosk
 ┌──────────────────────────────────────────────┐
 │         Raspberry Pi with HDMI Display       │
 │                                              │
+│  Boot → Docker starts → Xvfb → Firefox       │
+│                  ↑                          │
+│         No login screen shown               │
+│         Fullscreen kiosk mode                │
+│                                              │
 │  ┌────────────────────────────────────────┐  │
-│  │  X Server (Wayland/X11 on Pi)          │  │
-│  │  • Renders to HDMI output              │  │
+│  │  Xvfb Virtual Display (:99)            │  │
+│  │  • Creates virtual X11 display         │  │
+│  │  • Renders to framebuffer              │  │
 │  └────────────────┬───────────────────────┘  │
-│                   │ X11 socket (/tmp/.X11)   │
+│                   │                           │
 │  ┌────────────────▼───────────────────────┐  │
 │  │  Docker: dashboard-kiosk container     │  │
 │  │  ┌──────────────────────────────────┐  │  │
@@ -51,7 +58,7 @@ docker logs dashboard-kiosk
 │                                              │
 │  • localhost:8000 → Dashboard app on Pi      │
 │  • network_mode: host → shares network ns    │
-│  • Volume mount: X11 socket access           │
+│  • privileged: true → framebuffer access     │
 └──────────────────────────────────────────────┘
 ```
 
@@ -61,10 +68,12 @@ docker logs dashboard-kiosk
 |-----------|-------------|
 | `linuxserver/firefox:armv8` | Official Firefox for ARM64 (Pi) |
 | `unclutter` | Hides cursor after N seconds idle |
-| X11 socket mount | Lets container render to Pi display |
+| `xvfb` | Virtual X11 display (pre-login kiosk) |
+| privileged mode | Access to /dev/fb0 and framebuffer |
 | `network_mode: host` | `localhost` = Pi's IP |
 | `docker-compose` | Manages container lifecycle |
 | `setup-pi-kiosk.sh` | One-command setup script |
+| `dashboard-kiosk.service` | systemd service for auto-start |
 
 ## Configuration
 
@@ -74,6 +83,18 @@ docker logs dashboard-kiosk
 |----------|---------|-------------|
 | `DASHBOARD_URL` | `http://localhost:8000` | Dashboard app URL |
 | `CURSOR_TIMEOUT` | `5` | Seconds before cursor hides |
+| `MODE` | `xvfb` | Display mode: `xvfb` (recommended) |
+| `RESOLUTION` | `1920x1080x24` | Xvfb resolution |
+
+### Key Differences from Regular Mode
+
+| Feature | Regular Mode | Pre-Login Kiosk Mode |
+|---------|-------------|---------------------|
+| Display mode | `host` (uses existing X server) | `xvfb` (creates Xvfb) |
+| Privileged | No | Yes |
+| User | Kiosk user | Root |
+| Display manager | Kept running | Disabled |
+| Auto-start | At GUI login | At multi-user.target |
 
 ### Change Dashboard URL
 
@@ -87,17 +108,10 @@ docker compose down && docker compose up -d
 
 ### Change Resolution
 
-Add to `docker-compose.yml` environment:
-
-```yaml
-environment:
-  - RESOLUTION=1920x1080x24
+```bash
+# Edit docker-compose.yml
+RESOLUTION=2560x1440x24
 ```
-
-Supported resolutions:
-- `1920x1080x24` (1080p)
-- `1280x720x24` (720p)
-- `2560x1440x24` (1440p - for 4K Pi 4/5)
 
 ## Troubleshooting
 
@@ -110,28 +124,28 @@ docker exec kiosk ls -la /tmp/.X11-unix/
 # Check Docker logs
 docker logs dashboard-kiosk
 
-# Check if Pi's X server is running
-systemctl status lightdm  # or gdm3
+# Check if Xvfb is running
+docker exec kiosk ps aux | grep Xvfb
 ```
 
 ### Black screen or no display
 
 1. Verify X11 socket exists:
    ```bash
-   ls -la /tmp/.X11-unix/X0
+   ls -la /tmp/.X11-unix/X99
    ```
 
 2. Check permissions:
    ```bash
    # Ensure Docker can access X11
-   sudo chmod 777 /tmp/.X11-unix/X0
+   sudo chmod 777 /tmp/.X11-unix/X99
    ```
 
 3. Test manually:
    ```bash
    docker run --rm -it \
      -v /tmp/.X11-unix:/tmp/.X11-unix \
-     -e DISPLAY=:0 \
+     -e DISPLAY=:99 \
      linuxserver/firefox:armv8-latest \
      firefox --version
    ```
@@ -148,7 +162,7 @@ firefox --kiosk http://localhost:8000
 
 ### Performance issues (laggy rendering)
 
-1. Add GPU memory split in `/boot/config.txt`:
+1. Ensure GPU memory is set to 256MB in `/boot/config.txt`:
    ```
    gpu_mem=256
    ```
@@ -176,7 +190,7 @@ devices:
 
 ## Auto-start on Boot
 
-The setup script creates a systemd service. Verify it's enabled:
+The setup script creates a systemd service that starts at `multi-user.target` (before GUI login).
 
 ```bash
 # Check status

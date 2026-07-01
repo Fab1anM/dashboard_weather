@@ -6,17 +6,26 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: dashboard-kiosk
-    restart: unless-stopped
+    restart: always
     
-    # Dashboard URL (use host IP or localhost for Pi)
+    # Dashboard URL (set during setup)
     environment:
-      - DASHBOARD_URL=http://localhost:8000
+      - DASHBOARD_URL=__DASHBOARD_URL__
       # Hide mouse cursor after N seconds of inactivity
-      - CURSOR_TIMEOUT=5
+      - CURSOR_TIMEOUT=__CURSOR_TIMEOUT__
+      # Display mode: auto, host, xvfb
+      # For pre-login kiosk: use xvfb (Xvfb virtual display)
+      - MODE=xvfb
+      # Display resolution (for Xvfb)
+      - RESOLUTION=__RESOLUTION__
     
-    # Mount X11 socket so Firefox can render to Pi's physical display
+    # Privileged mode to access framebuffer and control display
+    privileged: true
+    
+    # Mount X11 socket and framebuffer
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /dev/fb0:/dev/fb0:rw
     
     # Use host network so localhost = Pi's address
     network_mode: host
@@ -25,6 +34,8 @@ services:
     devices:
       - /dev/input:/dev/input
       - /dev/fb0:/dev/fb0
+    
+    # Run as root (required for pre-login kiosk)
     
     # Resource limits for Pi
     deploy:

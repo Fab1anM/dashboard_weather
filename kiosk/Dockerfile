@@ -1,5 +1,5 @@
 # Dockerfile for Firefox kiosk on Raspberry Pi (ARM64/aarch64)
-# Uses linuxserver/firefox as base, adds kiosk dependencies
+# Designed for pre-login kiosk mode (starts before desktop login)
 
 FROM linuxserver/firefox:armv8-latest
 
@@ -12,6 +12,8 @@ RUN apt-get update && \
     dbus-x11 \
     x11-utils \
     xauth \
+    xvfb \
+    x11vnc \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

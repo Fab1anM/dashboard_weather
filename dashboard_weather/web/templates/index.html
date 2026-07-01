@@ -437,29 +437,34 @@
           {% endif %}
         </div>
         {% if data.mosel_stage_data %}
-        <div class="pegel-main">
-          <div class="pegel-value">
-            <span class="pegel-number">{{ '%.2f'|format(data.mosel_stage_data.current_stage_m) }}</span>
-            <span class="pegel-unit">m</span>
+        <div class="pegel-grid">
+          <div class="pegel-primary">
+            <div class="pegel-value">
+              <span class="pegel-number">{{ '%.2f'|format(data.mosel_stage_data.current_stage_m) }}</span>
+              <span class="pegel-unit">m</span>
+            </div>
+            <div class="pegel-trend">
+              {% if data.mosel_stage_data.trend == 'steigend' %}
+              ↑ steigend
+              {% elif data.mosel_stage_data.trend == 'fallend' %}
+              ↓ fallend
+              {% else %}
+              → gleichbleibend
+              {% endif %}
+            </div>
           </div>
-          <div class="pegel-trend">
-            {% if data.mosel_stage_data.trend == 'steigend' %}
-            ↑ steigend
-            {% elif data.mosel_stage_data.trend == 'fallend' %}
-            ↓ fallend
-            {% else %}
-            → gleichbleibend
-            {% endif %}
+          <div class="pegel-thresholds">
+            <div class="pegel-stat"><span class="pegel-stat-label">Meldehöhe</span><span class="pegel-stat-value">{{ '%.1f'|format(data.mosel_stage_data.threshold_warning_m) }}</span></div>
+            <div class="pegel-stat"><span class="pegel-stat-label">Hochwasser</span><span class="pegel-stat-value">{{ '%.1f'|format(data.mosel_stage_data.threshold_high_m) }}</span></div>
           </div>
         </div>
-        <dl class="pegel-stats">
-          <div><dt>Meldehöhe</dt><dd>{{ '%.1f'|format(data.mosel_stage_data.threshold_warning_m) }} m</dd></div>
-          <div><dt>Hochwassergrenze</dt><dd>{{ '%.1f'|format(data.mosel_stage_data.threshold_high_m) }} m</dd></div>
-        </dl>
         {% if data.mosel_stage_data.description %}
         <p class="pegel-hint">{{ data.mosel_stage_data.description }}</p>
         {% endif %}
-        <p class="muted">Stand: {% if data.mosel_stage_data.timestamp %}{% set ts = data.mosel_stage_data.timestamp %}{% if 'T' in ts %}{{ ts.split('T')[0].replace('-', '.') }} {{ ts.split('T')[1][:5] }}{% else %}{{ ts }}{% endif %}{% else %}?{% endif %} Uhr. Quelle: HVZ Rheinland-Pfalz.</p>
+        <div class="pegel-meta">
+          <span class="pegel-meta-item">Stand: {% if data.mosel_stage_data.timestamp %}{% set ts = data.mosel_stage_data.timestamp %}{% if 'T' in ts %}{{ ts.split('T')[0].replace('-', '.') }} {{ ts.split('T')[1][:5] }}{% else %}{{ ts }}{% endif %}{% else %}?{% endif %} Uhr</span>
+          <span class="pegel-meta-item">Quelle: HVZ Rheinland-Pfalz</span>
+        </div>
         {% else %}
         <p class="lead" style="color: var(--accent);">Keine aktuellen Pegelstände verfügbar.</p>
         <p class="muted">Quelle: Hochwasservorhersagezentrale Rheinland-Pfalz.</p>
