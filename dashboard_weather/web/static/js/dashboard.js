@@ -396,31 +396,7 @@ document.addEventListener("DOMContentLoaded", () => {
     maxWidth: 150,
   }).addTo(map);
 
-  // Save zoom/center to localStorage whenever user pans or zooms
-  map.on("moveend zoomend", function() {
-    var zoom = map.getZoom();
-    var center = map.getCenter();
-    try {
-      localStorage.setItem("dwl_map_zoom", zoom);
-      localStorage.setItem("dwl_map_center", center.lat + "," + center.lng);
-    } catch(e) {}
-  });
-
-  // Restore zoom/center from localStorage on load
-  try {
-    var savedZoom = parseInt(localStorage.getItem("dwl_map_zoom"), 10);
-    var savedCenter = localStorage.getItem("dwl_map_center");
-    if (savedZoom && !isNaN(savedZoom) && savedCenter) {
-      var parts = savedCenter.split(",");
-      if (parts.length === 2) {
-        var savedLat = parseFloat(parts[0]);
-        var savedLng = parseFloat(parts[1]);
-        if (!isNaN(savedLat) && !isNaN(savedLng)) {
-          map.setView([savedLat, savedLng], savedZoom);
-        }
-      }
-    }
-  } catch(e) {}
+  // Map always resets to configured center on load (no localStorage)
 
   // ============================================================
   // FIX MAP SIZING

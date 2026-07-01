@@ -16,7 +16,8 @@
           crossorigin=""></script>
   <style>
     /* ===== 32" / 2560px+ screen optimizations ===== */
-    /* Scales typography, spacing, card sizes, and grid for ultra-wide displays */
+    /* Scales typography, spacing, card sizes, and fonts for ultra-wide displays */
+    /* Grid remains 12 columns at all breakpoints - no grid-template-columns changes */
 
     @media (min-width: 2560px) {
       :root {
@@ -52,15 +53,15 @@
         height: calc(56px * var(--font-scale, 1));
       }
 
-      .eyebrow {
+      .eyebrow-inline {
         font-size: calc(0.92rem * var(--font-scale, 1));
       }
 
-      h1 {
+      .title-main {
         font-size: calc(2.4rem * var(--font-scale, 1));
       }
 
-      .subtitle {
+      .title-sub {
         font-size: calc(1.05rem * var(--font-scale, 1));
       }
 
@@ -200,18 +201,7 @@
         margin-top: 2.5rem;
       }
 
-      .grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: calc(2rem * var(--font-scale, 1));
-      }
-
-      .hero {
-        grid-column: span 2;
-      }
-
-      .suitability {
-        grid-column: span 1;
-      }
+      /* No grid changes - grid remains 12 columns at all breakpoints */
 
       .hourly-scroll {
         display: flex;
@@ -240,27 +230,10 @@
         padding: 3rem 0 5rem;
       }
 
-      .grid {
-        gap: calc(2.5rem * var(--font-scale, 1));
-      }
+      /* No grid changes - grid remains 12 columns at all breakpoints */
 
       .card {
         padding: calc(2.25rem * var(--font-scale, 1));
-      }
-    }
-
-    /* ===== 2200px+ ultrawide: 4 columns ===== */
-    @media (min-width: 2200px) and (max-width: 2559px) {
-      .grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .hero {
-        grid-column: span 3;
-      }
-
-      .suitability {
-        grid-column: span 1;
       }
     }
   </style>
@@ -273,12 +246,10 @@
     <header class="header">
       <div class="header-branding">
         <img class="header-logo" src="/static/dlrg-trier-stadt-logo.svg" alt="DLRG Trier-Stadt Logo" height="44">
-        <div>
-          <p class="eyebrow">Einsatz-Dashboard</p>
-          <h1>{{ data.location }}</h1>
-          <p class="subtitle">
-            Live-Wetter und UAS-Kontext · {{ timezone }}
-          </p>
+        <div class="header-title-wrap">
+          <p class="eyebrow-inline">Einsatz-Dashboard</p>
+          <p class="title-main">{{ data.location }}</p>
+          <p class="title-sub">· Live-Wetter und UAS-Kontext · {{ timezone }}</p>
         </div>
       </div>
       <div class="header-clock-wrap">
@@ -487,18 +458,6 @@
         </dl>
         {% if data.mosel_stage_data.description %}
         <p class="pegel-hint">{{ data.mosel_stage_data.description }}</p>
-        {% endif %}
-        {% if data.mosel_stage_data.forecast %}
-        <h4 class="section-title">Vorhersage</h4>
-        <div class="pegel-forecast">
-          {% for fc in data.mosel_stage_data.forecast[:6] %}
-          <div class="pegel-forecast-item">
-            <span class="pegel-forecast-time">{{ fc.hour[11:16] }}</span>
-            <span class="pegel-forecast-value">{{ '%.2f'|format(fc.stage_m) }} m</span>
-            <span class="pegel-forecast-trend">{{ fc.trend }}</span>
-          </div>
-          {% endfor %}
-        </div>
         {% endif %}
         <p class="muted">Stand: {{ data.mosel_stage_data.timestamp or '?' }} Uhr. Quelle: HVZ Rheinland-Pfalz.</p>
         {% else %}
