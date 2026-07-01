@@ -459,7 +459,7 @@
         {% if data.mosel_stage_data.description %}
         <p class="pegel-hint">{{ data.mosel_stage_data.description }}</p>
         {% endif %}
-        <p class="muted">Stand: {{ data.mosel_stage_data.timestamp or '?' }} Uhr. Quelle: HVZ Rheinland-Pfalz.</p>
+        <p class="muted">Stand: {% if data.mosel_stage_data.timestamp %}{% set ts = data.mosel_stage_data.timestamp %}{% if 'T' in ts %}{{ ts.split('T')[0].replace('-', '.') }} {{ ts.split('T')[1][:5] }}{% else %}{{ ts }}{% endif %}{% else %}?{% endif %} Uhr. Quelle: HVZ Rheinland-Pfalz.</p>
         {% else %}
         <p class="lead" style="color: var(--accent);">Keine aktuellen Pegelstände verfügbar.</p>
         <p class="muted">Quelle: Hochwasservorhersagezentrale Rheinland-Pfalz.</p>

@@ -1167,6 +1167,9 @@ dd {
   background: var(--surface-muted);
   border-radius: 6px;
   line-height: 1.3;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .pegel-forecast {

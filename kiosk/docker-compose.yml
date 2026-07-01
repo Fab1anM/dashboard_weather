@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  kiosk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dashboard-kiosk
+    restart: unless-stopped
+    
+    # Dashboard URL (use host IP or localhost for Pi)
+    environment:
+      - DASHBOARD_URL=http://localhost:8000
+      # Hide mouse cursor after N seconds of inactivity
+      - CURSOR_TIMEOUT=5
+    
+    # Mount X11 socket so Firefox can render to Pi's physical display
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    
+    # Use host network so localhost = Pi's address
+    network_mode: host
+    
+    # Give container access to input devices and framebuffer
+    devices:
+      - /dev/input:/dev/input
+      - /dev/fb0:/dev/fb0
+    
+    # Resource limits for Pi
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+    
+    # Kiosk should run with real-time priority for smooth rendering
+    ulimits:
+      rtprio: 99
+      rlimit: 99
