@@ -20,6 +20,23 @@ fi
 
 exec 3</dev/tty
 
+detect_default_dashboard_host() {
+    local candidate
+    candidate=$(hostname -I 2>/dev/null | awk '{print $1}')
+    if [[ -n "$candidate" ]]; then
+        echo "$candidate"
+        return 0
+    fi
+
+    candidate=$(ip route get 1.1.1.1 2>/dev/null | awk '/src/ {for (i = 1; i <= NF; i++) if ($i == "src") {print $(i + 1); exit}}')
+    if [[ -n "$candidate" ]]; then
+        echo "$candidate"
+        return 0
+    fi
+
+    echo "localhost"
+}
+
 # ── Helper: read a line with a default value ──────────────────────
 read_default() {
     local prompt="$1"
@@ -98,7 +115,9 @@ echo "============================================"
 
 KIOSK_USER="${KIOSK_USER:-$SUDO_USER}"
 echo " Using kiosk user: ${KIOSK_USER}"
-read_default "   Dashboard hostname/IP" "localhost" DASHBOARD_HOST
+DEFAULT_DASHBOARD_HOST="$(detect_default_dashboard_host)"
+echo " Suggested dashboard host: ${DEFAULT_DASHBOARD_HOST}"
+read_default "   Dashboard hostname/IP" "$DEFAULT_DASHBOARD_HOST" DASHBOARD_HOST
 read_default "   Dashboard port" "8000" DASHBOARD_PORT
 DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
 read_default "   Installation directory" "/opt/dashboard-kiosk" REPO_DIR

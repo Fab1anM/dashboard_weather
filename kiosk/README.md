@@ -80,8 +80,8 @@ sudo reboot
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DASHBOARD_URL` | `http://localhost:8000` | Dashboard app URL |
-| `DASHBOARD_HOST` | `localhost` | Host used for startup readiness checks |
+| `DASHBOARD_URL` | `http://<host-ip>:8000` | Dashboard app URL |
+| `DASHBOARD_HOST` | `<host-ip>` | Host used for startup readiness checks |
 | `DASHBOARD_PORT` | `8000` | Port used for startup readiness checks |
 | `CURSOR_TIMEOUT` | `5` | Seconds before cursor hides |
 | `MODE` | `xvfb` | Display mode: `xvfb` (recommended) |
@@ -107,6 +107,8 @@ sed -i 's|http://localhost:8000|http://your-machine-ip:8000|' docker-compose.yml
 # Restart
 docker compose down && docker compose up -d
 ```
+
+When running the dashboard separately from the kiosk container, prefer the machine IP shown by `hostname -I` instead of `localhost`.
 
 ### Change Resolution
 
