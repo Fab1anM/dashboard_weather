@@ -124,12 +124,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p "${REPO_DIR}"
 cd "${REPO_DIR}"
 
-# Copy kiosk files from script directory
-if [ ! -f "Dockerfile" ] || [ ! -f "docker-compose.yml" ]; then
-    echo "  Copying kiosk files from ${SCRIPT_DIR}..."
-    cp "${SCRIPT_DIR}/Dockerfile" "${SCRIPT_DIR}/docker-compose.yml" \
-       "${SCRIPT_DIR}/entrypoint.sh" .
-fi
+# Always copy kiosk files from script directory (fresh copy every time)
+echo "  Copying kiosk files from ${SCRIPT_DIR}..."
+cp -f "${SCRIPT_DIR}/Dockerfile" "${SCRIPT_DIR}/docker-compose.yml" \
+   "${SCRIPT_DIR}/entrypoint.sh" .
 
 # ── Step 3: Configure docker-compose ──────────────────────────────
 echo ""
