@@ -152,27 +152,38 @@ h1 {
 .muted {
   color: var(--text-muted);
 }
-
-.header-clock {
-  font-family: "DM Sans", monospace;
-  font-size: 3.2rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text);
-  flex-shrink: 0;
-  padding: 0 0.5rem;
-  line-height: 1.1;
-  text-align: right;
-}
-
-.header-clock-container {
+.clock-sub {
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  white-space: nowrap;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
+  gap: 0.35rem;
 }
 
-.clock-date {
+.clock-sub-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.clock-sub-time {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.clock-sub-divider {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.clock-sub-countdown {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
   font-family: "DM Sans", sans-serif;
   font-size: 0.85rem;
   color: var(--text-muted);

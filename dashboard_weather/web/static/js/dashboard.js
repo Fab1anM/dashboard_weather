@@ -18,14 +18,17 @@ function updateClock() {
     });
   }
 
-  // Update last refresh timestamp
-  const subEl = document.getElementById("clock-sub");
-  if (subEl) {
+  // Update last refresh timestamp (inline with countdown)
+  const subTimeEl = document.getElementById("clock-sub-time");
+  if (subTimeEl) {
     const pageEl = document.querySelector("[data-fetched-at]");
     const fetchedStr = pageEl ? pageEl.dataset.fetchedAt : "";
     if (fetchedStr) {
       const fetched = new Date(fetchedStr);
-      subEl.textContent = `Letzte Aktualisierung: ${fetched.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
+      subTimeEl.textContent = fetched.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     }
   }
 }
@@ -40,8 +43,11 @@ document.addEventListener("DOMContentLoaded", () => {
   applyNightMode();
   // Re-check every minute in case user leaves the page running overnight
   setInterval(applyNightMode, 60 * 1000);
+
   const refreshIntervalMs = 15 * 60 * 1000;
   let remaining = refreshIntervalMs;
+  const subCountdownEl = document.getElementById("clock-sub-countdown");
+  const refreshButtonEl = document.getElementById("refresh-button");
 
   function formatTime(ms) {
     const totalSec = Math.ceil(ms / 1000);
@@ -53,14 +59,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function tick() {
     remaining -= 1000;
     if (remaining <= 0) {
-      if (countdownEl) countdownEl.textContent = " Aktualisiere…";
+      if (subCountdownEl) subCountdownEl.textContent = " Aktualisiere\u2026";
       window.location.href = "/?refresh=1";
       return;
     }
-    if (countdownEl) {
-      countdownEl.textContent = ` Nächste Aktualisierung in ${formatTime(remaining)}`;
+      const remainingTime = formatTime(remaining);
+      refreshButtonEl.textContent = `wird geladen in [${remainingTime}]`;
     }
-  }
+  
 
   window.setInterval(tick, 1000);
 
@@ -128,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
     layers: "flugbeschraenkungsgebiete",
     format: "image/png",
     transparent: true,
-    attribution: "© dipul.de",
+    attribution: "\u00a9 dipul.de",
   });
 
   // Flughäfen
@@ -136,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
     layers: "flughaefen",
     format: "image/png",
     transparent: true,
-    attribution: "© dipul.de",
+    attribution: "\u00a9 dipul.de",
   });
 
   // Flugplätze
@@ -144,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
     layers: "flugplaetze",
     format: "image/png",
     transparent: true,
-    attribution: "© dipul.de",
+    attribution: "\u00a9 dipul.de",
   });
 
   // Naturschutzgebiete
@@ -152,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
     layers: "naturschutzgebiete",
     format: "image/png",
     transparent: true,
-    attribution: "© dipul.de",
+    attribution: "\u00a9 dipul.de",
   });
 
   // Vogelschutzgebiete
@@ -160,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
     layers: "vogelschutzgebiete",
     format: "image/png",
     transparent: true,
-    attribution: "© dipul.de",
+    attribution: "\u00a9 dipul.de",
   });
 
   // Wohngrundstücke (private property)
@@ -168,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
     layers: "wohngrundstuecke",
     format: "image/png",
     transparent: true,
-    attribution: "© dipul.de",
+    attribution: "\u00a9 dipul.de",
   });
 
   // Windkraftanlagen
@@ -176,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
     layers: "windkraftanlagen",
     format: "image/png",
     transparent: true,
-    attribution: "© dipul.de",
+    attribution: "\u00a9 dipul.de",
   });
 
   // Temporäre Betriebseinschränkungen
@@ -184,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
     layers: "temporaere_betriebseinschraenkungen",
     format: "image/png",
     transparent: true,
-    attribution: "© dipul.de",
+    attribution: "\u00a9 dipul.de",
   });
 
   // Bahnanlagen
@@ -192,7 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
     layers: "bahnanlagen",
     format: "image/png",
     transparent: true,
-    attribution: "© dipul.de",
+    attribution: "\u00a9 dipul.de",
   });
 
   // Autobahnen
@@ -200,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
     layers: "bundesautobahnen",
     format: "image/png",
     transparent: true,
-    attribution: "© dipul.de",
+    attribution: "\u00a9 dipul.de",
   });
 
   // ============================================================
@@ -216,13 +222,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const flyoverPopup = `
     <div style="font-family: system-ui; font-size: 13px; min-width: 180px;">
-      <strong style="color: #ff6b35;">⚠ Flyover Zone</strong><br>
+      <strong style="color: #ff6b35;">\u26a0 Flyover Zone</strong><br>
       <span style="color: #666;">Max. 1 km Radius vom Startpunkt</span><br>
       <hr style="margin: 6px 0; border: none; border-top: 1px solid #eee;">
       <div style="font-size: 12px; color: #888;">
-        <div>🔵 Unter 150m AGL: Erlaubnis</div>
-        <div>🟡 Über 150m AGL: Sondergenehmigung</div>
-        <div>🔴 Sondergebiete: Kontakt BLSV</div>
+        <div>\ud83d\udd35 Unter 150m AGL: Erlaubnis</div>
+        <div>\ud83d\udfe1 \u00dcber 150m AGL: Sondergenehmigung</div>
+        <div>\ud83d\udd34 Sondergebiete: Kontakt BLSV</div>
       </div>
     </div>
   `;
@@ -296,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div>Lng: ${airport.lng.toFixed(4)}° E</div>
           <hr style="margin: 4px 0; border: none; border-top: 1px solid #eee;">
           <div style="color: #e74c3c; font-size: 11px;">
-            ⚠ Mindestabstand: 5 km (bei kontrolliertem Luftraum)
+            \u26a0 Mindestabstand: 5 km (bei kontrolliertem Luftraum)
           </div>
         </div>
       </div>
@@ -324,7 +330,7 @@ document.addEventListener("DOMContentLoaded", () => {
         white-space: nowrap;
         box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         border: 2px solid white;
-      ">🛸 UAS Zone Info</div>`,
+      ">\ud83d\udef8 UAS Zone Info</div>`,
       iconSize: [100, 24],
       iconAnchor: [50, 12],
     }),
@@ -332,24 +338,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const dronePopup = `
     <div style="font-family: system-ui; font-size: 13px; min-width: 240px;">
-      <strong style="color: #3498db;">🛸 UAS-Regulierung Deutschland</strong>
+      <strong style="color: #3498db;">\ud83d\udef8 UAS-Regulierung Deutschland</strong>
       <hr style="margin: 6px 0; border: none; border-top: 1px solid #eee;">
       <div style="font-size: 12px;">
         <div style="margin: 4px 0;"><strong>Offene Kategorie:</strong></div>
         <div style="margin-left: 12px; color: #666;">
-          • Unter 120 m AGL<br>
-          • Nicht über besiedeltem Gebiet<br>
-          • Sichtkontakt erforderlich
+          \u2022 Unter 120 m AGL<br>
+          \u2022 Nicht über besiedeltem Gebiet<br>
+          \u2022 Sichtkontakt erforderlich
         </div>
         <div style="margin: 8px 0 4px;"><strong>Geworbene Kategorie:</strong></div>
         <div style="margin-left: 12px; color: #666;">
-          • Für Risiken über Personen<br>
-          • Spezielle Zulassung erforderlich
+          \u2022 Für Risiken über Personen<br>
+          \u2022 Spezielle Zulassung erforderlich
         </div>
         <div style="margin: 8px 0 4px;"><strong>Spezifische Kategorie:</strong></div>
         <div style="margin-left: 12px; color: #666;">
-          • A2/CMS oder SORA-Ansatz<br>
-          • Risiko-Bewertung notwendig
+          \u2022 A2/CMS oder SORA-Ansatz<br>
+          \u2022 Risiko-Bewertung notwendig
         </div>
       </div>
     </div>
@@ -361,16 +367,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // LAYER CONTROL
   // ============================================================
   const overlayMaps = {
-    "✈ Flughäfen": airports,
-    "🏞 Flugplätze": airfields,
-    "⚠ Luftraum-Einschränkungen": restrictedAreas,
-    "🌳 Naturschutzgebiete": natureReserves,
-    "🐦 Vogelschutzgebiete": birdAreas,
-    "🏠 Wohngrundstücke": residential,
-    "🌬 Windkraftanlagen": windTurbines,
-    "⏳ Temporäre Einschränkungen": temporaryRestrictions,
-    "🚆 Bahnanlagen": railway,
-    "🛣 Autobahnen": motorways,
+    "\u2708 Flughäfen": airports,
+    "\ud83c\udf1e Flugplätze": airfields,
+    "\u26a0 Luftraum-Einschränkungen": restrictedAreas,
+    "\ud83c\udf33 Naturschutzgebiete": natureReserves,
+    "\ud83d\udc26 Vogelschutzgebiete": birdAreas,
+    "\ud83c\udfe0 Wohngrundstücke": residential,
+    "\ud83c\udf2c Windkraftanlagen": windTurbines,
+    "\u23f3 Temporäre Einschränkungen": temporaryRestrictions,
+    "\ud83d\ude86 Bahnanlagen": railway,
+    "\ud83d\udee3 Autobahnen": motorways,
   };
 
   // Add all layers to control
