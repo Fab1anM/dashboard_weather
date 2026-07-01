@@ -5,17 +5,58 @@ set -e
 
 # Configuration with defaults
 DASHBOARD_URL="${DASHBOARD_URL:-http://localhost:8000}"
+if [[ "$DASHBOARD_URL" =~ ^https?://([^/:]+)(:([0-9]+))? ]]; then
+    DASHBOARD_HOST="${DASHBOARD_HOST:-${BASH_REMATCH[1]}}"
+    DASHBOARD_PORT="${DASHBOARD_PORT:-${BASH_REMATCH[3]:-80}}"
+else
+    DASHBOARD_HOST="${DASHBOARD_HOST:-localhost}"
+    DASHBOARD_PORT="${DASHBOARD_PORT:-8000}"
+fi
 CURSOR_TIMEOUT="${CURSOR_TIMEOUT:-5}"
 RESOLUTION="${RESOLUTION:-1920x1080x24}"
 MODE="${MODE:-xvfb}"  # auto, host, xvfb
+FIREFOX_ARGS="${FIREFOX_ARGS:---kiosk --private-window}"
 
 echo "============================================"
 echo " Dashboard Kiosk Starting"
 echo " URL:        ${DASHBOARD_URL}"
+echo " Host:       ${DASHBOARD_HOST}:${DASHBOARD_PORT}"
 echo " Mode:       ${MODE}"
 echo " Resolution: ${RESOLUTION}"
 echo " Cursor:     Hide after ${CURSOR_TIMEOUT}s idle"
 echo "============================================"
+
+wait_for_dashboard() {
+    echo "Waiting for dashboard server at ${DASHBOARD_HOST}:${DASHBOARD_PORT}..."
+    until python3 - <<'PY'
+import os
+import socket
+import sys
+
+host = os.environ["DASHBOARD_HOST"]
+port = int(os.environ["DASHBOARD_PORT"])
+
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+    sock.settimeout(2)
+    try:
+        sock.connect((host, port))
+    except OSError:
+        sys.exit(1)
+PY
+    do
+        echo "  Dashboard not reachable yet, retrying in 2s..."
+        sleep 2
+    done
+    echo "  Dashboard server is reachable"
+}
+
+launch_firefox() {
+    echo "Launching Firefox in kiosk mode..."
+    # shellcheck disable=SC2206
+    local firefox_args=( $FIREFOX_ARGS )
+    firefox "${firefox_args[@]}" "$DASHBOARD_URL" &
+    FIREFOX_PID=$!
+}
 
 # Step 1: Set up X display
 # For pre-login kiosk, we ALWAYS use Xvfb since no X server is running yet
@@ -38,10 +79,9 @@ echo "[3/3] Starting unclutter..."
 unclutter -root -idle "$CURSOR_TIMEOUT" -noreset &
 UNCLUTTER_PID=$!
 
-# Step 4: Launch Firefox in kiosk mode
-echo "Launching Firefox in kiosk mode..."
-firefox --kiosk "$DASHBOARD_URL" &
-FIREFOX_PID=$!
+# Step 4: Wait for dashboard and launch Firefox in kiosk mode
+wait_for_dashboard
+launch_firefox
 
 # Step 5: Keep container alive, auto-restart Firefox if it crashes
 echo "Kiosk running. PID Firefox=$FIREFOX_PID Unclutter=$UNCLUTTER_PID Xvfb=$XVFB_PID"
@@ -53,8 +93,8 @@ while true; do
     if ! kill -0 $FIREFOX_PID 2>/dev/null; then
         echo "Firefox crashed (exit code $?). Restarting in 3s..."
         sleep 3
-        firefox --kiosk "$DASHBOARD_URL" &
-        FIREFOX_PID=$!
+        wait_for_dashboard
+        launch_firefox
     fi
     
     # If Xvfb is dead, restart it too

@@ -1,7 +1,7 @@
 # Dashboard Kiosk - Linux
 
 Docker-based kiosk for Linux with Firefox fullscreen on HDMI display.
-Designed for pre-login kiosk mode (starts before login screen, fullscreen).
+Designed for pre-login kiosk mode so Firefox starts before user login and opens the dashboard in fullscreen automatically.
 
 ## Quick Setup
 
@@ -81,9 +81,12 @@ sudo reboot
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DASHBOARD_URL` | `http://localhost:8000` | Dashboard app URL |
+| `DASHBOARD_HOST` | `localhost` | Host used for startup readiness checks |
+| `DASHBOARD_PORT` | `8000` | Port used for startup readiness checks |
 | `CURSOR_TIMEOUT` | `5` | Seconds before cursor hides |
 | `MODE` | `xvfb` | Display mode: `xvfb` (recommended) |
 | `RESOLUTION` | `1920x1080x24` | Xvfb resolution |
+| `FIREFOX_ARGS` | `--kiosk --private-window` | Firefox launch flags for fullscreen kiosk |
 
 ### Key Differences from Regular Mode
 
@@ -191,6 +194,9 @@ devices:
 ## Auto-start on Boot
 
 The setup script creates a systemd service that starts at `multi-user.target` (before GUI login).
+
+The container now waits until the dashboard server is reachable before launching Firefox, which avoids a blank or error page during boot.
+If an older `dashboard-kiosk.service` already exists, the setup script stops, disables, removes, and recreates it automatically.
 
 ```bash
 # Check status

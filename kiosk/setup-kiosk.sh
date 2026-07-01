@@ -195,6 +195,8 @@ echo "[3/8] Configuring docker-compose.yml..."
 
 # Update docker-compose with user and URL
 sed -i "s|__DASHBOARD_URL__|${DASHBOARD_URL}|g" docker-compose.yml
+sed -i "s|__DASHBOARD_HOST__|${DASHBOARD_HOST}|g" docker-compose.yml
+sed -i "s|__DASHBOARD_PORT__|${DASHBOARD_PORT}|g" docker-compose.yml
 sed -i "s|__CURSOR_TIMEOUT__|${CURSOR_TIMEOUT}|g" docker-compose.yml
 sed -i "s|__RESOLUTION__|${RESOLUTION}|g" docker-compose.yml
 
@@ -239,18 +241,29 @@ sudo systemctl enable docker
 sudo systemctl start docker
 
 if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
+    if systemctl list-unit-files | grep -q '^dashboard-kiosk\.service'; then
+        echo "  Existing dashboard-kiosk.service found, cleaning it up first..."
+        sudo systemctl stop dashboard-kiosk.service 2>/dev/null || true
+        sudo systemctl disable dashboard-kiosk.service 2>/dev/null || true
+        sudo rm -f /etc/systemd/system/dashboard-kiosk.service
+        sudo systemctl daemon-reload
+    fi
+
     cat > /etc/systemd/system/dashboard-kiosk.service <<EOF
 [Unit]
 Description=Dashboard Kiosk (Docker)
 After=docker.service network-online.target
 Wants=network-online.target
+Requires=docker.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=${REPO_DIR}
+ExecStartPre=/usr/bin/docker compose pull --ignore-pull-failures
 ExecStart=/usr/bin/docker compose up -d
 ExecStop=/usr/bin/docker compose down
+TimeoutStartSec=0
 
 [Install]
 WantedBy=multi-user.target
