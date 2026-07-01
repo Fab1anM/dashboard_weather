@@ -6,7 +6,7 @@ from dataclasses import dataclass
 class Settings:
     host: str = "0.0.0.0"
     port: int = 8000
-    location_name: str = "Trier, Germany"
+    location_name: str = "Trier"
     latitude: float = 49.7596
     longitude: float = 6.6442
     timezone: str = "Europe/Berlin"
@@ -55,7 +55,7 @@ def load_settings() -> Settings:
     return Settings(
         host=os.getenv("DASHBOARD_HOST", "0.0.0.0"),
         port=int(os.getenv("DASHBOARD_PORT", "8000")),
-        location_name=os.getenv("DASHBOARD_LOCATION", "Trier, Germany"),
+        location_name=os.getenv("DASHBOARD_LOCATION", "Trier"),
         latitude=float(os.getenv("DASHBOARD_LATITUDE", "49.7596")),
         longitude=float(os.getenv("DASHBOARD_LONGITUDE", "6.6442")),
         timezone=os.getenv("DASHBOARD_TIMEZONE", "Europe/Berlin"),

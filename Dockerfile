@@ -1,5 +1,8 @@
 FROM python:3.12-slim-bookworm
 
+ARG BUILD_DATE=0
+ARG BUILD_VERSION=0
+
 WORKDIR /app
 
 RUN apt-get update && \
@@ -9,11 +12,13 @@ RUN apt-get update && \
 
 ENV PATH="/root/.local/bin:$PATH"
 
+LABEL BUILD_DATE="${BUILD_DATE}" BUILD_VERSION="${BUILD_VERSION}"
+
 COPY pyproject.toml uv.lock ./
 COPY README.md ./
 COPY dashboard_weather ./dashboard_weather
 
-RUN uv sync --frozen --no-dev --no-editable
+RUN uv sync --frozen --no-dev
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \

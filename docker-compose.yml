@@ -1,11 +1,16 @@
 services:
   dashboard:
-    build: .
+    build:
+      context: .
+      args:
+        BUILD_DATE: "1751356800"
+        BUILD_VERSION: "0.1.1"
     container_name: dashboard-server
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - "8000:8000"
     environment:
-      DASHBOARD_LOCATION: "Trier, Germany"
+      DASHBOARD_LOCATION: "Trier"
       DASHBOARD_LATITUDE: "49.7596"
       DASHBOARD_LONGITUDE: "6.6442"
       DASHBOARD_TIMEZONE: "Europe/Berlin"

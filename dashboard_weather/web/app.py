@@ -41,7 +41,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title="Dashboard Weather",
-        description="Weather and drone operations dashboard for Trier, Germany",
+        description="Weather and drone operations dashboard for Trier",
         version="0.1.0",
     )
     app.state.settings = settings
@@ -63,7 +63,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/", response_class=HTMLResponse)
     async def dashboard(request: Request, refresh: bool = False) -> HTMLResponse:
         data = await service.get_dashboard(force_refresh=refresh)
-        return templates.TemplateResponse(
+        response = templates.TemplateResponse(
             request=request,
             name="index.html",
             context={
@@ -72,6 +72,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "timezone": settings.timezone,
             },
         )
+        # Disable caching for the main page too
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
 
     return app
 
