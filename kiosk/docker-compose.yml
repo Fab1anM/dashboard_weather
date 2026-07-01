@@ -47,8 +47,3 @@ services:
         limits:
           memory: 2G
           cpus: "2.0"
-    
-    # Kiosk should run with real-time priority for smooth rendering
-    ulimits:
-      rtprio: 99
-      rlimit: 99

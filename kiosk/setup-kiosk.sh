@@ -27,20 +27,80 @@ read_default() {
     echo "$input"
 }
 
+# ── Helper: detect the current display resolution ─────────────────
+detect_resolution() {
+    local best_resolution=""
+    
+    # Try xdpyinfo first (needs an active X display)
+    if command -v xdpyinfo &>/dev/null; then
+        for d in $(ls /tmp/.X11-unix/ 2>/dev/null | tr -d 'X'); do
+            local result
+            result=$(DISPLAY=:"$d" xdpyinfo 2>/dev/null | grep -oP 'dimensions:\s+\K[\d]+x[\d]+')
+            if [[ -n "$result" ]]; then
+                local w h
+                w=$(echo "$result" | cut -dx -f1)
+                h=$(echo "$result" | cut -dx -f2)
+                echo "${w}x${h}x24"
+                return 0
+            fi
+        done
+    fi
+    
+    # Try xrandr (also needs DISPLAY)
+    if command -v xrandr &>/dev/null; then
+        local result
+        result=$(xrandr 2>/dev/null | grep -oP '\S+ connected\s+\K[\d]+x[\d]+')
+        if [[ -n "$result" ]]; then
+            echo "${result}x24"
+            return 0
+        fi
+    fi
+    
+    # Try EDID from DRM kernel interfaces (works without X server)
+    for edid_file in /sys/class/drm/*/edid; do
+        if [[ -f "$edid_file" ]]; then
+            local result
+            result=$(edid-decode "$edid_file" 2>/dev/null | grep -oP 'default\s+active\s+mode\s+:\s+\K[\d]+x[\d]+@' | head -1 | sed 's/@.*//')
+            if [[ -n "$result" ]]; then
+                echo "${result}x24"
+                return 0
+            fi
+            # Fallback: try to parse preferred mode from edid-decode
+            local w h
+            w=$(edid-decode "$edid_file" 2>/dev/null | grep -oP 'preferred\s+mode:\s+[\d]+' | head -1 | grep -oP '[\d]+$')
+            h=$(edid-decode "$edid_file" 2>/dev/null | grep -oP 'preferred\s+mode:\s+[\d]+x[\d]+' | grep -oP 'x[\d]+$' | tr -d 'x')
+            if [[ -n "$w" && -n "$h" ]]; then
+                echo "${w}x${h}x24"
+                return 0
+            fi
+        fi
+    done
+    
+    # Final fallback
+    echo "1920x1080x24"
+    return 1
+}
 # ── Configuration: prompt the user ────────────────────────────────
 echo ""
 echo "============================================"
 echo " Dashboard Kiosk Setup"
 echo "============================================"
 
-KIOSK_USER=$(read_default "   Kiosk username (runs Firefox)" "kiosk")
+KIOSK_USER="${KIOSK_USER:-$SUDO_USER}"
 DASHBOARD_HOST=$(read_default "   Dashboard hostname/IP" "localhost")
 DASHBOARD_PORT=$(read_default "   Dashboard port" "8000")
 DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
 REPO_DIR=$(read_default "   Installation directory" "/opt/dashboard-kiosk")
 AUTO_START=$(read_default "   Enable auto-start on boot? (y/n)" "y")
 CURSOR_TIMEOUT=$(read_default "   Hide cursor after idle (seconds)" "5")
-RESOLUTION=$(read_default "   Display resolution (e.g. 1920x1080x24)" "1920x1080x24")
+
+# Auto-detect resolution for the prompt default
+DETECTED_RESOLUTION=$(detect_resolution 2>/dev/null)
+if [[ -n "$DETECTED_RESOLUTION" ]]; then
+    RESOLUTION=$(read_default "   Display resolution (auto-detected: ${DETECTED_RESOLUTION})" "$DETECTED_RESOLUTION")
+else
+    RESOLUTION=$(read_default "   Display resolution (e.g. 1920x1080x24)" "1920x1080x24")
+fi
 DISABLE_DISPLAY_MANAGER=$(read_default "   Disable display manager (for pre-login kiosk)? (y/n)" "y")
 DISPLAY_MODE=$(read_default "   Display mode: xvfb (virtual), host (existing X11)" "xvfb")
 
