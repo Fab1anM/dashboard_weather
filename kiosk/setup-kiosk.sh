@@ -137,7 +137,7 @@ echo "============================================"
 
 # ── Step 0: Detect OS/distro ──────────────────────────────────────
 echo ""
-echo "[0/8] Detecting OS/distro..."
+echo "[0/7] Detecting OS/distro..."
 
 if [[ -f /etc/os-release ]]; then
     source /etc/os-release
@@ -157,7 +157,7 @@ echo "  Arch: ${DISTRO_ARCH}"
 
 # ── Step 1: Install Docker (if missing) ───────────────────────────
 echo ""
-echo "[1/8] Checking Docker installation..."
+echo "[1/7] Checking Docker installation..."
 if ! command -v docker &>/dev/null; then
     echo "  Docker not found. Installing..."
     
@@ -195,7 +195,7 @@ fi
 
 # ── Step 2: Prepare kiosk directory ───────────────────────────────
 echo ""
-echo "[2/8] Setting up kiosk directory..."
+echo "[2/7] Setting up kiosk directory..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 mkdir -p "${REPO_DIR}"
@@ -208,7 +208,7 @@ cp -f "${SCRIPT_DIR}/Dockerfile" "${SCRIPT_DIR}/docker-compose.yml" \
 
 # ── Step 3: Configure docker-compose ──────────────────────────────
 echo ""
-echo "[3/8] Configuring docker-compose.yml..."
+echo "[3/7] Configuring docker-compose.yml..."
 
 # Update docker-compose with user and URL
 sed -i "s|__DASHBOARD_URL__|${DASHBOARD_URL}|g" docker-compose.yml
@@ -217,19 +217,14 @@ sed -i "s|__DASHBOARD_PORT__|${DASHBOARD_PORT}|g" docker-compose.yml
 sed -i "s|__CURSOR_TIMEOUT__|${CURSOR_TIMEOUT}|g" docker-compose.yml
 sed -i "s|__RESOLUTION__|${RESOLUTION}|g" docker-compose.yml
 
-# ── Step 4: Build the kiosk image ─────────────────────────────────
-echo ""
-echo "[4/8] Building kiosk image (this may take a few minutes)..."
-docker compose build --no-cache
-
 # ── Step 5: Start the kiosk container ─────────────────────────────
 echo ""
-echo "[5/8] Starting kiosk container..."
+echo "[4/7] Starting kiosk container..."
 docker compose up -d
 
 # ── Step 6: Disable display manager (for pre-login kiosk) ─────────
 echo ""
-echo "[6/8] Configuring display manager..."
+echo "[5/7] Configuring display manager..."
 
 if [[ "${DISABLE_DISPLAY_MANAGER,,}" == "y" || "${DISABLE_DISPLAY_MANAGER,,}" == "yes" ]]; then
     echo "  Disabling display manager..."
@@ -253,7 +248,7 @@ fi
 
 # ── Step 7: Enable on-boot auto-start ─────────────────────────────
 echo ""
-echo "[7/8] Enabling on-boot auto-start..."
+echo "[6/7] Enabling on-boot auto-start..."
 sudo systemctl enable docker
 sudo systemctl start docker
 
@@ -295,7 +290,7 @@ fi
 
 # ── Step 8: GPU memory configuration (if applicable) ──────────────
 echo ""
-echo "[8/8] Checking GPU configuration..."
+echo "[7/7] Checking GPU configuration..."
 
 GPU_CONFIGURED=false
 

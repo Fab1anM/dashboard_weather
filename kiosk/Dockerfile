@@ -1,7 +1,7 @@
 # Dockerfile for Firefox kiosk on ARM64 (Jetson, Raspberry Pi 4/5)
 # Designed for pre-login kiosk mode (starts before desktop login)
 
-FROM arm64v8/ubuntu:24.04
+FROM ubuntu:24.04
 
 # Avoid interactive prompts during install
 ENV DEBIAN_FRONTEND=noninteractive
