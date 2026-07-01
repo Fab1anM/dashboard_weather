@@ -100,7 +100,7 @@ sudo reboot
 | Privileged | No | Yes |
 | User | Kiosk user | Root |
 | Display manager | Kept running | Optional, not recommended by default |
-| Auto-start | At GUI login | At multi-user.target |
+| Auto-start | At GUI login | At graphical.target |
 
 ### Change Dashboard URL
 
@@ -201,7 +201,7 @@ devices:
 
 ## Auto-start on Boot
 
-The setup script creates systemd services that start at `multi-user.target`.
+The setup script creates systemd services that start at `graphical.target`.
 
 The container now waits until the dashboard server is reachable before launching Firefox, which avoids a blank or error page during boot.
 If an older `dashboard-kiosk.service` already exists, the setup script stops, disables, removes, and recreates it automatically.

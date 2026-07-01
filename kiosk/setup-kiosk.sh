@@ -303,8 +303,8 @@ if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
     cat > /etc/systemd/system/dashboard-app.service <<EOF
 [Unit]
 Description=Dashboard App (Docker)
-After=docker.service network-online.target
-Wants=network-online.target
+After=docker.service network-online.target graphical.target
+Wants=network-online.target graphical.target
 Requires=docker.service
 
 [Service]
@@ -319,14 +319,14 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target
 EOF
 
     cat > /etc/systemd/system/dashboard-kiosk.service <<EOF
 [Unit]
 Description=Dashboard Kiosk (Docker)
-After=docker.service network-online.target dashboard-app.service
-Wants=network-online.target
+After=docker.service network-online.target graphical.target dashboard-app.service
+Wants=network-online.target graphical.target
 Requires=docker.service dashboard-app.service
 
 [Service]
@@ -341,13 +341,13 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target
 EOF
 
     sudo systemctl daemon-reload
     sudo systemctl enable dashboard-app.service
     sudo systemctl enable dashboard-kiosk.service
-    echo "  Auto-start enabled for dashboard app and kiosk"
+    echo "  Auto-start enabled for dashboard app and kiosk at graphical.target"
 else
     echo "  Skipping auto-start (run 'sudo systemctl enable dashboard-kiosk' later)"
 fi
