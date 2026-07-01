@@ -81,8 +81,15 @@ if [[ -n "$HOST_XAUTHORITY" && -f "$HOST_XAUTHORITY" ]]; then
 fi
 
 echo "[1/2] Waiting for host X display ${DISPLAY}..."
+DISPLAY_SOCKET="/tmp/.X11-unix/X${DISPLAY#:}"
+echo "  Expecting X11 socket at ${DISPLAY_SOCKET}"
+until [[ -S "$DISPLAY_SOCKET" ]]; do
+    echo "  Host X display socket not ready yet, retrying in 2s..."
+    sleep 2
+done
+
 until xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; do
-    echo "  Host X display not ready yet, retrying in 2s..."
+    echo "  Host X display not accepting connections yet, retrying in 2s..."
     sleep 2
 done
 
