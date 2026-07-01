@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # setup-kiosk.sh
-# Interactive setup for Docker-based Firefox kiosk on any Linux machine
-# Designed for pre-login kiosk mode (starts before login screen)
+# Interactive setup for native Firefox kiosk on any Linux machine
+# Dashboard backend runs in Docker, browser runs natively in the graphical session.
 #
 # Usage:
 #   sudo bash setup-kiosk.sh
@@ -120,7 +120,6 @@ echo " Suggested dashboard host: ${DEFAULT_DASHBOARD_HOST}"
 read_default "   Dashboard hostname/IP" "$DEFAULT_DASHBOARD_HOST" DASHBOARD_HOST
 read_default "   Dashboard port" "8000" DASHBOARD_PORT
 DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
-read_default "   Installation directory" "/opt/dashboard-kiosk" REPO_DIR
 read_default "   Dashboard app directory" "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" DASHBOARD_APP_DIR
 read_default "   Enable automatic graphical login for kiosk user? (y/n)" "y" AUTO_LOGIN
 read_default "   Enable auto-start on boot? (y/n)" "y" AUTO_START
@@ -148,11 +147,10 @@ echo " User       : ${KIOSK_USER}"
 echo " Dashboard  : ${DASHBOARD_URL}"
 echo " App dir    : ${DASHBOARD_APP_DIR}"
 echo " Auto-login : ${AUTO_LOGIN}"
-echo " Install dir: ${REPO_DIR}"
 echo " Cursor hide: ${CURSOR_TIMEOUT}s"
 echo " Resolution : ${RESOLUTION}"
 echo " Auto-start : ${AUTO_START}"
-echo " Display    : host X11 (runtime detected)"
+echo " Browser    : native Firefox kiosk"
 echo "============================================"
 
 # ── Step 0: Detect OS/distro ──────────────────────────────────────
@@ -213,40 +211,38 @@ else
     echo "  Docker is installed"
 fi
 
-# ── Step 2: Prepare kiosk directory ───────────────────────────────
+# ── Step 2: Validate dashboard app directory ──────────────────────
 echo ""
-echo "[2/7] Setting up kiosk directory..."
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-mkdir -p "${REPO_DIR}"
-cd "${REPO_DIR}"
-
-# Always copy kiosk files from script directory (fresh copy every time)
-echo "  Copying kiosk files from ${SCRIPT_DIR}..."
-cp -f "${SCRIPT_DIR}/Dockerfile" "${SCRIPT_DIR}/docker-compose.yml" \
-    "${SCRIPT_DIR}/entrypoint.sh" "${SCRIPT_DIR}/launch-kiosk.sh" .
-chmod +x ./entrypoint.sh ./launch-kiosk.sh
+echo "[2/7] Validating dashboard app directory..."
 
 if [[ ! -f "${DASHBOARD_APP_DIR}/docker-compose.yml" ]]; then
     echo "  Dashboard compose file not found in ${DASHBOARD_APP_DIR}"
     exit 1
 fi
 
-# ── Step 3: Configure docker-compose ──────────────────────────────
+# ── Step 3: Install native Firefox if missing ─────────────────────
 echo ""
-echo "[3/7] Configuring docker-compose.yml..."
-
-# Update docker-compose with user and URL
-sed -i "s|__DASHBOARD_URL__|${DASHBOARD_URL}|g" docker-compose.yml
-sed -i "s|__DASHBOARD_HOST__|${DASHBOARD_HOST}|g" docker-compose.yml
-sed -i "s|__DASHBOARD_PORT__|${DASHBOARD_PORT}|g" docker-compose.yml
-sed -i "s|__CURSOR_TIMEOUT__|${CURSOR_TIMEOUT}|g" docker-compose.yml
-sed -i "s|__RESOLUTION__|${RESOLUTION}|g" docker-compose.yml
-
-if grep -q '__[A-Z0-9_][A-Z0-9_]*__' docker-compose.yml; then
-    echo "  Error: unresolved placeholders remain in ${REPO_DIR}/docker-compose.yml"
-    grep '__[A-Z0-9_][A-Z0-9_]*__' docker-compose.yml || true
-    exit 1
+echo "[3/7] Checking native Firefox installation..."
+if ! command -v firefox >/dev/null 2>&1; then
+    echo "  Firefox not found. Installing..."
+    case "$DISTRO_ID" in
+        ubuntu|debian)
+            apt-get update
+            apt-get install -y firefox
+            ;;
+        fedora|centos|rhel)
+            dnf install -y firefox
+            ;;
+        arch)
+            pacman -S --noconfirm firefox
+            ;;
+        *)
+            echo "  Unsupported distro for Firefox install. Please install Firefox manually."
+            exit 1
+            ;;
+    esac
+else
+    echo "  Firefox is installed"
 fi
 
 # ── Step 4: Start the dashboard service ───────────────────────────
@@ -254,14 +250,9 @@ echo ""
 echo "[4/7] Starting dashboard service..."
 docker compose -f "${DASHBOARD_APP_DIR}/docker-compose.yml" up -d dashboard
 
-# ── Step 5: Start the kiosk container ─────────────────────────────
+# ── Step 5: Configure graphical login ─────────────────────────────
 echo ""
-echo "[5/7] Starting kiosk container..."
-docker compose up -d --force-recreate --pull always
-
-# ── Step 6: Configure graphical login ─────────────────────────────
-echo ""
-echo "[6/7] Configuring graphical login..."
+echo "[5/7] Configuring graphical login..."
 echo "  Keeping display manager enabled"
 sudo usermod -aG video "${KIOSK_USER}" 2>/dev/null || true
 sudo usermod -aG input "${KIOSK_USER}" 2>/dev/null || true
@@ -289,9 +280,9 @@ else
     echo "  Skipping automatic graphical login configuration"
 fi
 
-# ── Step 7: Enable graphical session auto-start ───────────────────
+# ── Step 6: Enable graphical session auto-start ───────────────────
 echo ""
-echo "[7/7] Enabling graphical session auto-start..."
+echo "[6/7] Enabling graphical session auto-start..."
 sudo systemctl enable docker
 sudo systemctl start docker
 
@@ -317,20 +308,20 @@ if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
 [Desktop Entry]
 Type=Application
 Name=Dashboard Kiosk
-Exec=${REPO_DIR}/launch-kiosk.sh ${REPO_DIR}/docker-compose.yml ${DASHBOARD_APP_DIR}/docker-compose.yml ${DASHBOARD_URL}
+Exec=firefox --kiosk ${DASHBOARD_URL}
 X-GNOME-Autostart-enabled=true
 Terminal=false
 EOF
     sudo chown -R "${KIOSK_USER}:${KIOSK_USER}" "/home/${KIOSK_USER}/.config"
-    echo "  Graphical session autostart enabled for dashboard app and kiosk"
+    echo "  Graphical session autostart enabled for native Firefox kiosk"
 else
     rm -f "/home/${KIOSK_USER}/.config/autostart/dashboard-kiosk.desktop"
     echo "  Skipping auto-start"
 fi
 
-# ── Step 8: GPU memory configuration (if applicable) ──────────────
+# ── Step 7: GPU memory configuration (if applicable) ──────────────
 echo ""
-echo "[8/8] Checking GPU configuration..."
+echo "[7/7] Checking GPU configuration..."
 
 GPU_CONFIGURED=false
 
@@ -370,15 +361,13 @@ echo ""
 echo " User       : ${KIOSK_USER}"
 echo " URL        : ${DASHBOARD_URL}"
 echo " App dir    : ${DASHBOARD_APP_DIR}"
-echo " Install dir: ${REPO_DIR}"
 echo " Resolution : ${RESOLUTION}"
 echo ""
 echo " To view logs:"
-echo "   docker logs -f dashboard-kiosk"
-echo "   tail -f /home/${KIOSK_USER}/.cache/dashboard-kiosk-launch.log"
+echo "   docker logs -f dashboard-server"
 echo ""
 echo " To restart:"
-echo "   docker compose restart"
+echo "   docker compose -f ${DASHBOARD_APP_DIR}/docker-compose.yml restart dashboard"
 echo ""
 if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
     echo " To disable auto-start:"

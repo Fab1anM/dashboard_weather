@@ -1,7 +1,7 @@
 # Dashboard Kiosk - Linux
 
-Docker-based kiosk for Linux with Firefox fullscreen on HDMI display.
-Designed for kiosk mode so Firefox starts automatically on the real host display and opens the dashboard in fullscreen. The setup starts both the dashboard app and the kiosk on the same machine through the user's graphical session, with display detection at runtime.
+Native Firefox kiosk for Linux with the dashboard backend running in Docker.
+Designed for kiosk mode so Firefox starts directly on the host desktop in fullscreen while the FastAPI dashboard backend runs in Docker on the same machine.
 
 ## Quick Setup
 
@@ -20,12 +20,9 @@ sudo bash setup-kiosk.sh
 ### 2. After Setup
 
 ```bash
-# Verify dashboard and kiosk are running
+# Verify dashboard is running
 docker ps | grep dashboard-server
-docker ps | grep kiosk
 docker logs dashboard-server
-docker logs dashboard-kiosk
-tail -f ~/.cache/dashboard-kiosk-launch.log
 
 # Reboot to apply changes and start kiosk
 sudo reboot
@@ -39,20 +36,16 @@ If automatic graphical login is enabled during setup, the kiosk user is logged i
 ┌──────────────────────────────────────────────┐
 │         Linux Machine with HDMI Display      │
 │                                              │
-│  Login → Docker starts → Firefox on :0       │
+│  Login → Docker starts → Native Firefox      │
 │                  ↑                          │
 │         No login screen shown               │
 │         Fullscreen kiosk mode                │
 │                                              │
-│  ┌────────────────▼───────────────────────┐  │
-│  │  Docker: dashboard-kiosk container     │  │
-│  │  ┌──────────────────────────────────┐  │  │
-│  │  │  Firefox --kiosk                 │  │  │
-│  │  │  • Uses host X display           │  │  │
-│  │  │  • Fullscreen, no decorations    │  │  │
-│  │  │  • Auto-restart on crash         │  │  │
-│  │  │  • Hidden cursor when idle       │  │  │
-│  │  └──────────────────────────────────┘  │  │
+│  ┌────────────────────────────────────────┐  │
+│  │  Native Firefox --kiosk               │  │
+│  │  • Runs in the logged-in desktop      │  │
+│  │  • Fullscreen, no decorations         │  │
+│  │  • Avoids container X11 issues        │  │
 │  └────────────────────────────────────────┘  │
 │                                              │
 │  • localhost:8000 → Dashboard app on machine │
@@ -65,15 +58,9 @@ If automatic graphical login is enabled during setup, the kiosk user is logged i
 
 | Component | What It Does |
 |-----------|-------------|
-| Mozilla APT Firefox | Real Firefox binary inside the container |
-| `unclutter` | Hides cursor after N seconds idle |
-| host X11 display | Real physical display used by Firefox |
-| privileged mode | Access to /dev/fb0 and framebuffer |
-| `network_mode: host` | `localhost` = machine's IP |
+| Native Firefox | Fullscreen browser on the host desktop |
 | main `docker-compose.yml` | Runs the dashboard app |
-| kiosk `docker-compose.yml` | Runs the kiosk browser |
 | `setup-kiosk.sh` | Interactive setup script |
-| `launch-kiosk.sh` | Runtime display/Xauthority detection launcher |
 | desktop autostart entry | Starts dashboard and kiosk after graphical login |
 
 ## Configuration
@@ -85,17 +72,14 @@ If automatic graphical login is enabled during setup, the kiosk user is logged i
 | `DASHBOARD_URL` | `http://<host-ip>:8000` | Dashboard app URL |
 | `DASHBOARD_HOST` | `<host-ip>` | Host used for startup readiness checks |
 | `DASHBOARD_PORT` | `8000` | Port used for startup readiness checks |
-| `CURSOR_TIMEOUT` | `5` | Seconds before cursor hides |
-| `MODE` | `host` | Display mode: `host` |
-| `RESOLUTION` | `1920x1080x24` | Fallback display resolution for logging/detection |
-| `FIREFOX_ARGS` | `--kiosk --private-window` | Firefox launch flags for fullscreen kiosk |
+| `CURSOR_TIMEOUT` | `5` | Reserved for future cursor handling |
 
 ### Key Differences from Regular Mode
 
 | Feature | Current Kiosk Mode | Notes |
 |---------|-------------|---------------------|
-| Display mode | `host` (uses existing X server) | Runtime detected |
-| Privileged | Yes | Needed for device/input access |
+| Display mode | Native desktop session | No X11 container forwarding |
+| Privileged | No | Browser runs on host |
 | User | Kiosk user | Auto-login recommended |
 | Display manager | Kept running | Required |
 | Auto-start | User autostart desktop entry | After graphical login |
@@ -112,61 +96,39 @@ docker compose down && docker compose up -d
 
 When running the dashboard separately from the kiosk container, prefer the machine IP shown by `hostname -I` instead of `localhost`.
 
-### Change Resolution
-
-```bash
-# Edit docker-compose.yml
-RESOLUTION=2560x1440x24
-```
-
 ## Troubleshooting
 
-### Container won't start
+### Dashboard backend won't start
 
 ```bash
-# Check X11 socket is mounted
-docker exec kiosk ls -la /tmp/.X11-unix/
-
 # Check Docker logs
-docker logs dashboard-kiosk
-
-# Check if Xvfb is running
-docker exec kiosk ps aux | grep Xvfb
+docker logs dashboard-server
 ```
 
 ### Black screen or no display
 
-1. Verify X11 socket exists:
+1. Verify Firefox autostart entry exists:
    ```bash
-   ls -la /tmp/.X11-unix/X99
+   ls -la ~/.config/autostart/dashboard-kiosk.desktop
    ```
 
-2. Check permissions:
+2. Test Firefox manually:
    ```bash
-   # Ensure Docker can access X11
-   sudo chmod 777 /tmp/.X11-unix/X99
+   firefox --kiosk http://127.0.0.1:8000
    ```
 
-3. Test manually:
+3. Check desktop session:
    ```bash
-   docker run --rm -it \
-     -v /tmp/.X11-unix:/tmp/.X11-unix \
-     -e DISPLAY=:99 \
-     linuxserver/firefox:armv8-latest \
-     firefox --version
+   echo "$DISPLAY"
+   ps aux | grep -E 'gnome-shell|Xorg|Xwayland|wayland' | grep -v grep
    ```
 
 ### Firefox crashes on startup
 
 ```bash
-# Enter container shell
-docker exec -it dashboard-kiosk bash
-
 # Run Firefox manually to see errors
 firefox --kiosk http://localhost:8000
 ```
-
-The image installs Firefox from Mozilla's APT repository because Ubuntu's default `firefox` package is a snap launcher and does not work inside this container.
 
 ### Performance issues (laggy rendering)
 
@@ -201,10 +163,8 @@ devices:
 
 The setup script creates a desktop autostart entry in the kiosk user's graphical session.
 
-The container now waits until the dashboard server is reachable before launching Firefox, which avoids a blank or error page during boot.
 If older `dashboard-kiosk.service` or `dashboard-app.service` units exist, the setup script removes them automatically.
 The default setup does not disable the display manager, because that can leave some systems stuck during boot.
-The setup script now aborts if unresolved placeholders remain in the generated kiosk `docker-compose.yml`.
 
 If you already disabled the display manager and the machine no longer boots cleanly, recover from a console or recovery shell and re-enable the correct service, for example:
 
@@ -221,31 +181,21 @@ ls -la ~/.config/autostart/dashboard-kiosk.desktop
 ## Manual Control
 
 ```bash
-# Stop the kiosk
-docker compose down
+# Start backend
+docker compose -f /path/to/dashboard_weather/docker-compose.yml up -d dashboard
 
-# Start fresh
-docker compose up -d
-
-# View logs
-docker logs -f dashboard-kiosk
-
-# Enter container (debug)
-docker exec -it dashboard-kiosk bash
+# Launch kiosk manually
+firefox --kiosk http://127.0.0.1:8000
 
 # Restart after code changes
-docker compose down
 docker compose build --no-cache
-docker compose up -d
+docker compose -f /path/to/dashboard_weather/docker-compose.yml up -d dashboard
 ```
 
 ## Files
 
 ```
 kiosk/
-├── Dockerfile              # Firefox + kiosk tools
-├── entrypoint.sh           # Container startup script
-├── docker-compose.yml      # Service definition
 ├── setup-kiosk.sh          # Interactive setup script
 └── README.md               # This file
 ```
