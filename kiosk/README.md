@@ -1,7 +1,7 @@
 # Dashboard Kiosk - Linux
 
 Docker-based kiosk for Linux with Firefox fullscreen on HDMI display.
-Designed for kiosk mode so Firefox starts automatically and opens the dashboard in fullscreen. The default setup keeps the system display manager enabled to avoid breaking boot/login.
+Designed for kiosk mode so Firefox starts automatically and opens the dashboard in fullscreen. The setup now starts both the dashboard app and the kiosk on the same machine. The default setup keeps the system display manager enabled to avoid breaking boot/login.
 
 ## Quick Setup
 
@@ -20,8 +20,10 @@ sudo bash setup-kiosk.sh
 ### 2. After Setup
 
 ```bash
-# Verify kiosk is running
+# Verify dashboard and kiosk are running
+docker ps | grep dashboard-server
 docker ps | grep kiosk
+docker logs dashboard-server
 docker logs dashboard-kiosk
 
 # Reboot to apply changes and start kiosk
@@ -70,9 +72,11 @@ sudo reboot
 | `xvfb` | Virtual X11 display (pre-login kiosk) |
 | privileged mode | Access to /dev/fb0 and framebuffer |
 | `network_mode: host` | `localhost` = machine's IP |
-| `docker-compose` | Manages container lifecycle |
+| main `docker-compose.yml` | Runs the dashboard app |
+| kiosk `docker-compose.yml` | Runs the kiosk browser |
 | `setup-kiosk.sh` | Interactive setup script |
-| `dashboard-kiosk.service` | systemd service for auto-start |
+| `dashboard-app.service` | systemd service for dashboard auto-start |
+| `dashboard-kiosk.service` | systemd service for kiosk auto-start |
 
 ## Configuration
 
@@ -195,10 +199,11 @@ devices:
 
 ## Auto-start on Boot
 
-The setup script creates a systemd service that starts at `multi-user.target`.
+The setup script creates systemd services that start at `multi-user.target`.
 
 The container now waits until the dashboard server is reachable before launching Firefox, which avoids a blank or error page during boot.
 If an older `dashboard-kiosk.service` already exists, the setup script stops, disables, removes, and recreates it automatically.
+If an older `dashboard-app.service` already exists, the setup script also recreates it automatically.
 The default setup does not disable the display manager, because that can leave some systems stuck during boot.
 
 If you already disabled the display manager and the machine no longer boots cleanly, recover from a console or recovery shell and re-enable the correct service, for example:
@@ -210,9 +215,11 @@ sudo systemctl enable --now gdm3
 
 ```bash
 # Check status
+systemctl is-enabled dashboard-app
 systemctl is-enabled dashboard-kiosk
 
 # Enable (if not already)
+sudo systemctl enable dashboard-app
 sudo systemctl enable dashboard-kiosk
 
 # Check it starts on next reboot

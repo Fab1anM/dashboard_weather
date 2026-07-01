@@ -121,6 +121,7 @@ read_default "   Dashboard hostname/IP" "$DEFAULT_DASHBOARD_HOST" DASHBOARD_HOST
 read_default "   Dashboard port" "8000" DASHBOARD_PORT
 DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
 read_default "   Installation directory" "/opt/dashboard-kiosk" REPO_DIR
+read_default "   Dashboard app directory" "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" DASHBOARD_APP_DIR
 read_default "   Enable auto-start on boot? (y/n)" "y" AUTO_START
 read_default "   Hide cursor after idle (seconds)" "5" CURSOR_TIMEOUT
 
@@ -146,6 +147,7 @@ echo " Summary"
 echo "============================================"
 echo " User       : ${KIOSK_USER}"
 echo " Dashboard  : ${DASHBOARD_URL}"
+echo " App dir    : ${DASHBOARD_APP_DIR}"
 echo " Install dir: ${REPO_DIR}"
 echo " Cursor hide: ${CURSOR_TIMEOUT}s"
 echo " Resolution : ${RESOLUTION}"
@@ -225,6 +227,11 @@ echo "  Copying kiosk files from ${SCRIPT_DIR}..."
 cp -f "${SCRIPT_DIR}/Dockerfile" "${SCRIPT_DIR}/docker-compose.yml" \
    "${SCRIPT_DIR}/entrypoint.sh" .
 
+if [[ ! -f "${DASHBOARD_APP_DIR}/docker-compose.yml" ]]; then
+    echo "  Dashboard compose file not found in ${DASHBOARD_APP_DIR}"
+    exit 1
+fi
+
 # ── Step 3: Configure docker-compose ──────────────────────────────
 echo ""
 echo "[3/7] Configuring docker-compose.yml..."
@@ -236,14 +243,19 @@ sed -i "s|__DASHBOARD_PORT__|${DASHBOARD_PORT}|g" docker-compose.yml
 sed -i "s|__CURSOR_TIMEOUT__|${CURSOR_TIMEOUT}|g" docker-compose.yml
 sed -i "s|__RESOLUTION__|${RESOLUTION}|g" docker-compose.yml
 
+# ── Step 4: Start the dashboard service ───────────────────────────
+echo ""
+echo "[4/7] Starting dashboard service..."
+docker compose -f "${DASHBOARD_APP_DIR}/docker-compose.yml" up -d dashboard
+
 # ── Step 5: Start the kiosk container ─────────────────────────────
 echo ""
-echo "[4/7] Starting kiosk container..."
+echo "[5/7] Starting kiosk container..."
 docker compose up -d --force-recreate --pull always
 
 # ── Step 6: Disable display manager (for pre-login kiosk) ─────────
 echo ""
-echo "[5/7] Configuring display manager..."
+echo "[6/7] Configuring display manager..."
 
 if [[ "${DISABLE_DISPLAY_MANAGER,,}" == "y" || "${DISABLE_DISPLAY_MANAGER,,}" == "yes" ]]; then
     echo "  Disabling display manager..."
@@ -267,11 +279,19 @@ fi
 
 # ── Step 7: Enable on-boot auto-start ─────────────────────────────
 echo ""
-echo "[6/7] Enabling on-boot auto-start..."
+echo "[7/7] Enabling on-boot auto-start..."
 sudo systemctl enable docker
 sudo systemctl start docker
 
 if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
+    if systemctl list-unit-files | grep -q '^dashboard-app\.service'; then
+        echo "  Existing dashboard-app.service found, cleaning it up first..."
+        sudo systemctl stop dashboard-app.service 2>/dev/null || true
+        sudo systemctl disable dashboard-app.service 2>/dev/null || true
+        sudo rm -f /etc/systemd/system/dashboard-app.service
+        sudo systemctl daemon-reload
+    fi
+
     if systemctl list-unit-files | grep -q '^dashboard-kiosk\.service'; then
         echo "  Existing dashboard-kiosk.service found, cleaning it up first..."
         sudo systemctl stop dashboard-kiosk.service 2>/dev/null || true
@@ -280,12 +300,34 @@ if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
         sudo systemctl daemon-reload
     fi
 
-    cat > /etc/systemd/system/dashboard-kiosk.service <<EOF
+    cat > /etc/systemd/system/dashboard-app.service <<EOF
 [Unit]
-Description=Dashboard Kiosk (Docker)
+Description=Dashboard App (Docker)
 After=docker.service network-online.target
 Wants=network-online.target
 Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=${DASHBOARD_APP_DIR}
+ExecStartPre=/usr/bin/docker compose pull --ignore-pull-failures
+ExecStart=/usr/bin/docker compose up -d dashboard
+ExecStop=/usr/bin/docker compose stop dashboard
+TimeoutStartSec=0
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    cat > /etc/systemd/system/dashboard-kiosk.service <<EOF
+[Unit]
+Description=Dashboard Kiosk (Docker)
+After=docker.service network-online.target dashboard-app.service
+Wants=network-online.target
+Requires=docker.service dashboard-app.service
 
 [Service]
 Type=oneshot
@@ -303,15 +345,16 @@ WantedBy=multi-user.target
 EOF
 
     sudo systemctl daemon-reload
+    sudo systemctl enable dashboard-app.service
     sudo systemctl enable dashboard-kiosk.service
-    echo "  Auto-start enabled (non-blocking startup at multi-user.target)"
+    echo "  Auto-start enabled for dashboard app and kiosk"
 else
     echo "  Skipping auto-start (run 'sudo systemctl enable dashboard-kiosk' later)"
 fi
 
 # ── Step 8: GPU memory configuration (if applicable) ──────────────
 echo ""
-echo "[7/7] Checking GPU configuration..."
+echo "[8/8] Checking GPU configuration..."
 
 GPU_CONFIGURED=false
 
@@ -350,6 +393,7 @@ echo "============================================"
 echo ""
 echo " User       : ${KIOSK_USER}"
 echo " URL        : ${DASHBOARD_URL}"
+echo " App dir    : ${DASHBOARD_APP_DIR}"
 echo " Install dir: ${REPO_DIR}"
 echo " Resolution : ${RESOLUTION}"
 echo ""
@@ -361,6 +405,7 @@ echo "   docker compose restart"
 echo ""
 if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
     echo " To disable auto-start:"
+    echo "   sudo systemctl disable dashboard-app"
     echo "   sudo systemctl disable dashboard-kiosk"
 fi
 echo ""
