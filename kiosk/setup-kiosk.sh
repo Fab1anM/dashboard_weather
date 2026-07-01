@@ -106,7 +106,12 @@ read_default "   Enable auto-start on boot? (y/n)" "y" AUTO_START
 read_default "   Hide cursor after idle (seconds)" "5" CURSOR_TIMEOUT
 
 # Auto-detect resolution for the prompt default
-DETECTED_RESOLUTION=$(detect_resolution 2>/dev/null)
+echo " Detecting screen resolution..."
+DETECTED_RESOLUTION="$(detect_resolution 2>/dev/null || true)"
+if [[ -z "$DETECTED_RESOLUTION" ]]; then
+    DETECTED_RESOLUTION="1920x1080x24"
+    echo " Resolution detection fallback: ${DETECTED_RESOLUTION}"
+fi
 echo " Detected screen resolution: ${DETECTED_RESOLUTION}"
 if [[ -n "$DETECTED_RESOLUTION" ]]; then
     read_default "   Display resolution (auto-detected: ${DETECTED_RESOLUTION})" "$DETECTED_RESOLUTION" RESOLUTION
