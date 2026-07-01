@@ -303,9 +303,10 @@ if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
     cat > /etc/systemd/system/dashboard-app.service <<EOF
 [Unit]
 Description=Dashboard App (Docker)
-After=docker.service network-online.target graphical.target
-Wants=network-online.target graphical.target
+After=docker.service network-online.target display-manager.service
+Wants=network-online.target
 Requires=docker.service
+PartOf=graphical.target
 
 [Service]
 Type=oneshot
@@ -325,9 +326,10 @@ EOF
     cat > /etc/systemd/system/dashboard-kiosk.service <<EOF
 [Unit]
 Description=Dashboard Kiosk (Docker)
-After=docker.service network-online.target graphical.target dashboard-app.service
-Wants=network-online.target graphical.target
+After=docker.service network-online.target display-manager.service dashboard-app.service
+Wants=network-online.target
 Requires=docker.service dashboard-app.service
+PartOf=graphical.target
 
 [Service]
 Type=oneshot
