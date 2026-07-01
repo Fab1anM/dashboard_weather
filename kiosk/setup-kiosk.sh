@@ -252,6 +252,29 @@ else
     echo "  Firefox is installed"
 fi
 
+echo "  Checking unclutter installation..."
+if ! command -v unclutter >/dev/null 2>&1; then
+    echo "  unclutter not found. Installing..."
+    case "$DISTRO_ID" in
+        ubuntu|debian)
+            apt-get update
+            apt-get install -y unclutter
+            ;;
+        fedora|centos|rhel)
+            dnf install -y unclutter
+            ;;
+        arch)
+            pacman -S --noconfirm unclutter
+            ;;
+        *)
+            echo "  Unsupported distro for unclutter install. Please install unclutter manually."
+            exit 1
+            ;;
+    esac
+else
+    echo "  unclutter is installed"
+fi
+
 # ── Step 4: Start the dashboard service ───────────────────────────
 echo ""
 echo "[4/7] Starting dashboard service..."
@@ -311,15 +334,34 @@ fi
 
 if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
     sudo mkdir -p "/home/${KIOSK_USER}/.config/autostart"
+    sudo mkdir -p "/home/${KIOSK_USER}/.mozilla/firefox/kiosk-profile"
+    sudo cp "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/launch-native-kiosk.sh" "/home/${KIOSK_USER}/.local/bin/dashboard-kiosk-launcher"
+    sudo chmod +x "/home/${KIOSK_USER}/.local/bin/dashboard-kiosk-launcher"
+    sudo tee "/home/${KIOSK_USER}/.mozilla/firefox/kiosk-profile/user.js" >/dev/null <<EOF
+user_pref("app.normandy.first_run", false);
+user_pref("browser.aboutwelcome.enabled", false);
+user_pref("browser.bookmarks.restore_default_bookmarks", false);
+user_pref("browser.messaging-system.whatsNewPanel.enabled", false);
+user_pref("browser.rights.3.shown", true);
+user_pref("browser.shell.checkDefaultBrowser", false);
+user_pref("browser.startup.firstrunSkipsHomepage", false);
+user_pref("browser.startup.homepage_override.mstone", "ignore");
+user_pref("browser.tabs.warnOnClose", false);
+user_pref("datareporting.healthreport.uploadEnabled", false);
+user_pref("datareporting.policy.dataSubmissionEnabled", false);
+user_pref("datareporting.policy.dataSubmissionPolicyAcceptedVersion", 2);
+user_pref("toolkit.telemetry.enabled", false);
+user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);
+EOF
     cat > "/home/${KIOSK_USER}/.config/autostart/dashboard-kiosk.desktop" <<EOF
 [Desktop Entry]
 Type=Application
 Name=Dashboard Kiosk
-Exec=firefox --kiosk ${DASHBOARD_URL}
+Exec=/home/${KIOSK_USER}/.local/bin/dashboard-kiosk-launcher ${DASHBOARD_URL} ${CURSOR_TIMEOUT} /home/${KIOSK_USER}/.mozilla/firefox/kiosk-profile
 X-GNOME-Autostart-enabled=true
 Terminal=false
 EOF
-    sudo chown -R "${KIOSK_USER}:${KIOSK_USER}" "/home/${KIOSK_USER}/.config"
+    sudo chown -R "${KIOSK_USER}:${KIOSK_USER}" "/home/${KIOSK_USER}/.config" "/home/${KIOSK_USER}/.mozilla" "/home/${KIOSK_USER}/.local"
     echo "  Graphical session autostart enabled for native Firefox kiosk"
 else
     rm -f "/home/${KIOSK_USER}/.config/autostart/dashboard-kiosk.desktop"

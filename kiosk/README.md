@@ -32,6 +32,9 @@ sudo reboot
 
 If automatic graphical login is enabled during setup, the kiosk user is logged in automatically and the dashboard should appear directly after boot.
 
+The setup also creates a dedicated Firefox kiosk profile with first-run, telemetry, and default-browser prompts disabled.
+It also installs and starts `unclutter` to hide the mouse cursor after the configured idle timeout.
+
 ## How It Works
 
 ```
