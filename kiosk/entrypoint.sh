@@ -15,12 +15,6 @@ fi
 
 MODE="${MODE:-xvfb}"  # auto, host, xvfb
 
-if [[ "$MODE" != "host" && "$DASHBOARD_HOST" == "localhost" || "$MODE" != "host" && "$DASHBOARD_HOST" == "127.0.0.1" ]]; then
-    DASHBOARD_HOST="${HOST_GATEWAY:-host.docker.internal}"
-    DASHBOARD_URL="${DASHBOARD_URL/localhost/${DASHBOARD_HOST}}"
-    DASHBOARD_URL="${DASHBOARD_URL/127.0.0.1/${DASHBOARD_HOST}}"
-fi
-
 CURSOR_TIMEOUT="${CURSOR_TIMEOUT:-5}"
 RESOLUTION="${RESOLUTION:-1920x1080x24}"
 FIREFOX_ARGS="${FIREFOX_ARGS:---kiosk --private-window}"
