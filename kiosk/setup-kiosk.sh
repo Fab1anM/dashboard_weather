@@ -122,8 +122,6 @@ read_default "   Dashboard port" "8000" DASHBOARD_PORT
 DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
 read_default "   Installation directory" "/opt/dashboard-kiosk" REPO_DIR
 read_default "   Dashboard app directory" "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" DASHBOARD_APP_DIR
-read_default "   X11 display" ":0" X11_DISPLAY
-read_default "   Xauthority file" "/home/${KIOSK_USER}/.Xauthority" XAUTHORITY_FILE
 read_default "   Enable auto-start on boot? (y/n)" "y" AUTO_START
 read_default "   Hide cursor after idle (seconds)" "5" CURSOR_TIMEOUT
 
@@ -150,8 +148,6 @@ echo "============================================"
 echo " User       : ${KIOSK_USER}"
 echo " Dashboard  : ${DASHBOARD_URL}"
 echo " App dir    : ${DASHBOARD_APP_DIR}"
-echo " X display  : ${X11_DISPLAY}"
-echo " Xauthority : ${XAUTHORITY_FILE}"
 echo " Install dir: ${REPO_DIR}"
 echo " Cursor hide: ${CURSOR_TIMEOUT}s"
 echo " Resolution : ${RESOLUTION}"
@@ -229,7 +225,8 @@ cd "${REPO_DIR}"
 # Always copy kiosk files from script directory (fresh copy every time)
 echo "  Copying kiosk files from ${SCRIPT_DIR}..."
 cp -f "${SCRIPT_DIR}/Dockerfile" "${SCRIPT_DIR}/docker-compose.yml" \
-   "${SCRIPT_DIR}/entrypoint.sh" .
+    "${SCRIPT_DIR}/entrypoint.sh" "${SCRIPT_DIR}/launch-kiosk.sh" .
+chmod +x ./entrypoint.sh ./launch-kiosk.sh
 
 if [[ ! -f "${DASHBOARD_APP_DIR}/docker-compose.yml" ]]; then
     echo "  Dashboard compose file not found in ${DASHBOARD_APP_DIR}"
@@ -244,8 +241,6 @@ echo "[3/7] Configuring docker-compose.yml..."
 sed -i "s|__DASHBOARD_URL__|${DASHBOARD_URL}|g" docker-compose.yml
 sed -i "s|__DASHBOARD_HOST__|${DASHBOARD_HOST}|g" docker-compose.yml
 sed -i "s|__DASHBOARD_PORT__|${DASHBOARD_PORT}|g" docker-compose.yml
-sed -i "s|__DISPLAY__|${X11_DISPLAY}|g" docker-compose.yml
-sed -i "s|__XAUTHORITY__|${XAUTHORITY_FILE}|g" docker-compose.yml
 sed -i "s|__CURSOR_TIMEOUT__|${CURSOR_TIMEOUT}|g" docker-compose.yml
 sed -i "s|__RESOLUTION__|${RESOLUTION}|g" docker-compose.yml
 
@@ -317,7 +312,7 @@ if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
 [Desktop Entry]
 Type=Application
 Name=Dashboard Kiosk
-Exec=/usr/bin/docker compose -f ${DASHBOARD_APP_DIR}/docker-compose.yml up -d dashboard && /usr/bin/docker compose -f ${REPO_DIR}/docker-compose.yml up -d --pull always
+Exec=${REPO_DIR}/launch-kiosk.sh ${REPO_DIR}/docker-compose.yml ${DASHBOARD_APP_DIR}/docker-compose.yml ${DASHBOARD_URL}
 X-GNOME-Autostart-enabled=true
 Terminal=false
 EOF

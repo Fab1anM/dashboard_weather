@@ -1,7 +1,7 @@
 # Dashboard Kiosk - Linux
 
 Docker-based kiosk for Linux with Firefox fullscreen on HDMI display.
-Designed for kiosk mode so Firefox starts automatically on the real host display and opens the dashboard in fullscreen. The setup starts both the dashboard app and the kiosk on the same machine through the user's graphical session.
+Designed for kiosk mode so Firefox starts automatically on the real host display and opens the dashboard in fullscreen. The setup starts both the dashboard app and the kiosk on the same machine through the user's graphical session, with display detection at runtime.
 
 ## Quick Setup
 
@@ -70,6 +70,7 @@ sudo reboot
 | main `docker-compose.yml` | Runs the dashboard app |
 | kiosk `docker-compose.yml` | Runs the kiosk browser |
 | `setup-kiosk.sh` | Interactive setup script |
+| `launch-kiosk.sh` | Runtime display/Xauthority detection launcher |
 | desktop autostart entry | Starts dashboard and kiosk after graphical login |
 
 ## Configuration

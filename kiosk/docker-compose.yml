@@ -15,9 +15,9 @@ services:
       - DASHBOARD_URL=__DASHBOARD_URL__
       - DASHBOARD_HOST=__DASHBOARD_HOST__
       - DASHBOARD_PORT=__DASHBOARD_PORT__
-      - DISPLAY=__DISPLAY__
+      - DISPLAY=${DISPLAY:-:0}
       - XAUTHORITY=/tmp/kiosk.Xauthority
-      - HOST_XAUTHORITY=__XAUTHORITY__
+      - HOST_XAUTHORITY=${XAUTHORITY:-}
       # Hide mouse cursor after N seconds of inactivity
       - CURSOR_TIMEOUT=__CURSOR_TIMEOUT__
       - MODE=host
