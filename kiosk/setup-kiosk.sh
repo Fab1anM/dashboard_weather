@@ -17,6 +17,7 @@ set -euo pipefail
 read_default() {
     local prompt="$1"
     local default="$2"
+    local __resultvar="$3"
     local input
     if [[ -n "$default" ]]; then
         read -r -p "${prompt} [${default}]: " input </dev/tty
@@ -24,7 +25,7 @@ read_default() {
     else
         read -r -p "${prompt}: " input </dev/tty
     fi
-    echo "$input"
+    printf -v "$__resultvar" '%s' "$input"
 }
 
 # ── Helper: detect the current display resolution ─────────────────
@@ -87,22 +88,24 @@ echo " Dashboard Kiosk Setup"
 echo "============================================"
 
 KIOSK_USER="${KIOSK_USER:-$SUDO_USER}"
-DASHBOARD_HOST=$(read_default "   Dashboard hostname/IP" "localhost")
-DASHBOARD_PORT=$(read_default "   Dashboard port" "8000")
+echo " Using kiosk user: ${KIOSK_USER}"
+read_default "   Dashboard hostname/IP" "localhost" DASHBOARD_HOST
+read_default "   Dashboard port" "8000" DASHBOARD_PORT
 DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
-REPO_DIR=$(read_default "   Installation directory" "/opt/dashboard-kiosk")
-AUTO_START=$(read_default "   Enable auto-start on boot? (y/n)" "y")
-CURSOR_TIMEOUT=$(read_default "   Hide cursor after idle (seconds)" "5")
+read_default "   Installation directory" "/opt/dashboard-kiosk" REPO_DIR
+read_default "   Enable auto-start on boot? (y/n)" "y" AUTO_START
+read_default "   Hide cursor after idle (seconds)" "5" CURSOR_TIMEOUT
 
 # Auto-detect resolution for the prompt default
 DETECTED_RESOLUTION=$(detect_resolution 2>/dev/null)
+echo " Detected screen resolution: ${DETECTED_RESOLUTION}"
 if [[ -n "$DETECTED_RESOLUTION" ]]; then
-    RESOLUTION=$(read_default "   Display resolution (auto-detected: ${DETECTED_RESOLUTION})" "$DETECTED_RESOLUTION")
+    read_default "   Display resolution (auto-detected: ${DETECTED_RESOLUTION})" "$DETECTED_RESOLUTION" RESOLUTION
 else
-    RESOLUTION=$(read_default "   Display resolution (e.g. 1920x1080x24)" "1920x1080x24")
+    read_default "   Display resolution (e.g. 1920x1080x24)" "1920x1080x24" RESOLUTION
 fi
-DISABLE_DISPLAY_MANAGER=$(read_default "   Disable display manager (for pre-login kiosk)? (y/n)" "y")
-DISPLAY_MODE=$(read_default "   Display mode: xvfb (virtual), host (existing X11)" "xvfb")
+read_default "   Disable display manager (for pre-login kiosk)? (y/n)" "y" DISABLE_DISPLAY_MANAGER
+read_default "   Display mode: xvfb (virtual), host (existing X11)" "xvfb" DISPLAY_MODE
 
 echo ""
 echo "============================================"
