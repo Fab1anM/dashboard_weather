@@ -51,6 +51,17 @@ detect_xauthority() {
     echo "$HOME/.Xauthority"
 }
 
+detect_resolution() {
+    local display_value="$1"
+    local result
+    result=$(xdpyinfo -display "$display_value" 2>/dev/null | grep -oP 'dimensions:\s+\K[0-9]+x[0-9]+' | head -1)
+    if [[ -n "$result" ]]; then
+        echo "${result}x24"
+        return 0
+    fi
+    echo "1920x1080x24"
+}
+
 DISPLAY_VALUE="$(detect_display)"
 XAUTHORITY_VALUE="$(detect_xauthority)"
 
@@ -71,10 +82,14 @@ until xdpyinfo -display "$DISPLAY_VALUE" >/dev/null 2>&1; do
     sleep 2
 done
 
+RESOLUTION_VALUE="$(detect_resolution "$DISPLAY_VALUE")"
+echo "Detected runtime resolution ${RESOLUTION_VALUE}"
+
 /usr/bin/docker compose -f "$DASHBOARD_COMPOSE_FILE" up -d dashboard
 DISPLAY="$DISPLAY_VALUE" \
 XAUTHORITY="$XAUTHORITY_VALUE" \
 DASHBOARD_URL="$DEFAULT_DASHBOARD_URL" \
+RESOLUTION="$RESOLUTION_VALUE" \
 /usr/bin/docker compose -f "$KIOSK_COMPOSE_FILE" up -d --pull always
 
 echo "==== $(date --iso-8601=seconds) dashboard-kiosk launcher done ===="
