@@ -13,19 +13,28 @@
 
 set -euo pipefail
 
+if [[ ! -t 0 && ! -e /dev/tty ]]; then
+    echo "Error: interactive terminal required for setup." >&2
+    exit 1
+fi
+
+exec 3</dev/tty
+
 # ── Helper: read a line with a default value ──────────────────────
 read_default() {
     local prompt="$1"
     local default="$2"
     local __resultvar="$3"
     local input
+    printf '%s\n' " Prompting: ${prompt}" >&2
     if [[ -n "$default" ]]; then
-        read -r -p "${prompt} [${default}]: " input </dev/tty
+        read -r -u 3 -p "${prompt} [${default}]: " input
         input="${input:-$default}"
     else
-        read -r -p "${prompt}: " input </dev/tty
+        read -r -u 3 -p "${prompt}: " input
     fi
     printf -v "$__resultvar" '%s' "$input"
+    printf '%s\n' " Selected: ${__resultvar}=${input}" >&2
 }
 
 # ── Helper: detect the current display resolution ─────────────────
