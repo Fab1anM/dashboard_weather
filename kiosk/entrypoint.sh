@@ -1,6 +1,5 @@
 #!/bin/bash
-# entrypoint.sh - Kiosk startup for Firefox on Raspberry Pi
-# Designed for pre-login kiosk mode (no desktop session)
+# entrypoint.sh - Kiosk startup for Firefox on a real host X display
 set -e
 
 # Configuration with defaults
@@ -13,11 +12,12 @@ else
     DASHBOARD_PORT="${DASHBOARD_PORT:-8000}"
 fi
 
-MODE="${MODE:-xvfb}"  # auto, host, xvfb
+MODE="${MODE:-host}"
 
 CURSOR_TIMEOUT="${CURSOR_TIMEOUT:-5}"
 RESOLUTION="${RESOLUTION:-1920x1080x24}"
 FIREFOX_ARGS="${FIREFOX_ARGS:---kiosk --private-window}"
+HOST_XAUTHORITY="${HOST_XAUTHORITY:-}"
 
 detect_host_resolution() {
     if ! command -v xdpyinfo >/dev/null 2>&1; then
@@ -42,7 +42,7 @@ if [[ -n "$HOST_RESOLUTION" ]]; then
     echo "Detected host X11 resolution: ${HOST_RESOLUTION}"
     RESOLUTION="$HOST_RESOLUTION"
 else
-    echo "Using configured Xvfb resolution: ${RESOLUTION}"
+    echo "Using configured display resolution: ${RESOLUTION}"
 fi
 
 echo "============================================"
@@ -72,33 +72,30 @@ launch_firefox() {
     FIREFOX_PID=$!
 }
 
-# Step 1: Set up X display
-# For pre-login kiosk, we ALWAYS use Xvfb since no X server is running yet
-echo "[1/3] Starting Xvfb virtual display..."
-Xvfb :99 -screen 0 $RESOLUTION -ac &
-XVFB_PID=$!
-sleep 2
-export DISPLAY=:99
-echo "  Xvfb running on :99 (PID $XVFB_PID)"
+export DISPLAY="${DISPLAY:-:0}"
+export XAUTHORITY="${XAUTHORITY:-/tmp/kiosk.Xauthority}"
 
-# Step 2: Start dbus if not running (Firefox sometimes needs it)
-if ! pgrep -x dbus-daemon > /dev/null 2>&1; then
-    echo "[2/3] Starting dbus..."
-    mkdir -p /run/dbus
-    dbus-daemon --system --fork 2>/dev/null || true
+if [[ -n "$HOST_XAUTHORITY" && -f "$HOST_XAUTHORITY" ]]; then
+    cp "$HOST_XAUTHORITY" "$XAUTHORITY"
+    chmod 600 "$XAUTHORITY"
 fi
 
-# Step 3: Launch unclutter to hide cursor when idle
-echo "[3/3] Starting unclutter..."
+echo "[1/2] Waiting for host X display ${DISPLAY}..."
+until xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; do
+    echo "  Host X display not ready yet, retrying in 2s..."
+    sleep 2
+done
+
+echo "[2/2] Starting unclutter..."
 unclutter -display "$DISPLAY" -idle "$CURSOR_TIMEOUT" -root &
 UNCLUTTER_PID=$!
 
-# Step 4: Wait for dashboard and launch Firefox in kiosk mode
+# Step 3: Wait for dashboard and launch Firefox in kiosk mode
 wait_for_dashboard
 launch_firefox
 
-# Step 5: Keep container alive, auto-restart Firefox if it crashes
-echo "Kiosk running. PID Firefox=$FIREFOX_PID Unclutter=$UNCLUTTER_PID Xvfb=$XVFB_PID"
+# Step 4: Keep container alive, auto-restart Firefox if it crashes
+echo "Kiosk running. PID Firefox=$FIREFOX_PID Unclutter=$UNCLUTTER_PID"
 echo "To stop: kill $FIREFOX_PID"
 while true; do
     sleep 30
@@ -109,14 +106,5 @@ while true; do
         sleep 3
         wait_for_dashboard
         launch_firefox
-    fi
-    
-    # If Xvfb is dead, restart it too
-    if ! kill -0 $XVFB_PID 2>/dev/null; then
-        echo "Xvfb crashed. Restarting in 3s..."
-        sleep 3
-        Xvfb :99 -screen 0 $RESOLUTION -ac &
-        XVFB_PID=$!
-        export DISPLAY=:99
     fi
 done

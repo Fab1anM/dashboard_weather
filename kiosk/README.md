@@ -1,7 +1,7 @@
 # Dashboard Kiosk - Linux
 
 Docker-based kiosk for Linux with Firefox fullscreen on HDMI display.
-Designed for kiosk mode so Firefox starts automatically and opens the dashboard in fullscreen. The setup now starts both the dashboard app and the kiosk on the same machine. The default setup keeps the system display manager enabled to avoid breaking boot/login.
+Designed for kiosk mode so Firefox starts automatically on the real host display and opens the dashboard in fullscreen. The setup starts both the dashboard app and the kiosk on the same machine through the user's graphical session.
 
 ## Quick Setup
 
@@ -36,21 +36,16 @@ sudo reboot
 ┌──────────────────────────────────────────────┐
 │         Linux Machine with HDMI Display      │
 │                                              │
-│  Boot → Docker starts → Xvfb → Firefox       │
+│  Login → Docker starts → Firefox on :0       │
 │                  ↑                          │
 │         No login screen shown               │
 │         Fullscreen kiosk mode                │
 │                                              │
-│  ┌────────────────────────────────────────┐  │
-│  │  Xvfb Virtual Display (:99)            │  │
-│  │  • Creates virtual X11 display         │  │
-│  │  • Renders to framebuffer              │  │
-│  └────────────────┬───────────────────────┘  │
-│                   │                           │
 │  ┌────────────────▼───────────────────────┐  │
 │  │  Docker: dashboard-kiosk container     │  │
 │  │  ┌──────────────────────────────────┐  │  │
 │  │  │  Firefox --kiosk                 │  │  │
+│  │  │  • Uses host X display           │  │  │
 │  │  │  • Fullscreen, no decorations    │  │  │
 │  │  │  • Auto-restart on crash         │  │  │
 │  │  │  • Hidden cursor when idle       │  │  │
@@ -69,7 +64,7 @@ sudo reboot
 |-----------|-------------|
 | Mozilla APT Firefox | Real Firefox binary inside the container |
 | `unclutter` | Hides cursor after N seconds idle |
-| `xvfb` | Virtual X11 display (pre-login kiosk) |
+| host X11 display | Real physical display used by Firefox |
 | privileged mode | Access to /dev/fb0 and framebuffer |
 | `network_mode: host` | `localhost` = machine's IP |
 | main `docker-compose.yml` | Runs the dashboard app |
@@ -88,7 +83,7 @@ sudo reboot
 | `DASHBOARD_HOST` | `<host-ip>` | Host used for startup readiness checks |
 | `DASHBOARD_PORT` | `8000` | Port used for startup readiness checks |
 | `CURSOR_TIMEOUT` | `5` | Seconds before cursor hides |
-| `MODE` | `xvfb` | Display mode: `xvfb` (recommended) |
+| `MODE` | `host` | Display mode: `host` |
 | `RESOLUTION` | `1920x1080x24` | Xvfb resolution |
 | `FIREFOX_ARGS` | `--kiosk --private-window` | Firefox launch flags for fullscreen kiosk |
 
@@ -100,7 +95,7 @@ sudo reboot
 | Privileged | No | Yes |
 | User | Kiosk user | Root |
 | Display manager | Kept running | Optional, not recommended by default |
-| Auto-start | At GUI login | At graphical.target |
+| Auto-start | At GUI login | User autostart desktop entry |
 
 ### Change Dashboard URL
 
@@ -201,12 +196,13 @@ devices:
 
 ## Auto-start on Boot
 
-The setup script creates systemd services that start at `graphical.target`.
+The setup script creates a desktop autostart entry in the kiosk user's graphical session.
 
 The container now waits until the dashboard server is reachable before launching Firefox, which avoids a blank or error page during boot.
 If an older `dashboard-kiosk.service` already exists, the setup script stops, disables, removes, and recreates it automatically.
 If an older `dashboard-app.service` already exists, the setup script also recreates it automatically.
 The default setup does not disable the display manager, because that can leave some systems stuck during boot.
+The setup script now aborts if unresolved placeholders remain in the generated kiosk `docker-compose.yml`.
 
 If you already disabled the display manager and the machine no longer boots cleanly, recover from a console or recovery shell and re-enable the correct service, for example:
 
