@@ -139,8 +139,6 @@ if [[ -n "$DETECTED_RESOLUTION" ]]; then
 else
     read_default "   Display resolution (e.g. 1920x1080x24)" "1920x1080x24" RESOLUTION
 fi
-read_default "   Disable display manager (for pre-login kiosk)? (y/n)" "n" DISABLE_DISPLAY_MANAGER
-read_default "   Display mode: xvfb (virtual), host (existing X11)" "xvfb" DISPLAY_MODE
 
 echo ""
 echo "============================================"
@@ -153,9 +151,8 @@ echo " Auto-login : ${AUTO_LOGIN}"
 echo " Install dir: ${REPO_DIR}"
 echo " Cursor hide: ${CURSOR_TIMEOUT}s"
 echo " Resolution : ${RESOLUTION}"
-echo " Display    : ${DISPLAY_MODE}"
 echo " Auto-start : ${AUTO_START}"
-echo " No-login   : ${DISABLE_DISPLAY_MANAGER}"
+echo " Display    : host X11 (runtime detected)"
 echo "============================================"
 
 # ── Step 0: Detect OS/distro ──────────────────────────────────────
@@ -262,29 +259,13 @@ echo ""
 echo "[5/7] Starting kiosk container..."
 docker compose up -d --force-recreate --pull always
 
-# ── Step 6: Disable display manager (for pre-login kiosk) ─────────
+# ── Step 6: Configure graphical login ─────────────────────────────
 echo ""
-echo "[6/7] Configuring display manager..."
-
-if [[ "${DISABLE_DISPLAY_MANAGER,,}" == "y" || "${DISABLE_DISPLAY_MANAGER,,}" == "yes" ]]; then
-    echo "  Disabling display manager..."
-    
-    # Detect and disable common display managers
-    for dm in lightdm gdm3 sddm lxdm mdm xdm; do
-        if systemctl is-active --quiet "$dm" 2>/dev/null; then
-            echo "  Stopping and disabling ${dm}..."
-            sudo systemctl stop "$dm"
-            sudo systemctl disable "$dm"
-        fi
-    done
-    
-    # Add kiosk user to relevant groups for display access
-    sudo usermod -aG video "${KIOSK_USER}" 2>/dev/null || true
-    sudo usermod -aG input "${KIOSK_USER}" 2>/dev/null || true
-    echo "  Added ${KIOSK_USER} to video/input groups"
-else
-    echo "  Keeping display manager enabled to avoid blocking normal boot/login"
-fi
+echo "[6/7] Configuring graphical login..."
+echo "  Keeping display manager enabled"
+sudo usermod -aG video "${KIOSK_USER}" 2>/dev/null || true
+sudo usermod -aG input "${KIOSK_USER}" 2>/dev/null || true
+echo "  Added ${KIOSK_USER} to video/input groups"
 
 if [[ "${AUTO_LOGIN,,}" == "y" || "${AUTO_LOGIN,,}" == "yes" ]]; then
     echo "  Configuring GDM automatic login for ${KIOSK_USER}..."
@@ -394,6 +375,7 @@ echo " Resolution : ${RESOLUTION}"
 echo ""
 echo " To view logs:"
 echo "   docker logs -f dashboard-kiosk"
+echo "   tail -f /home/${KIOSK_USER}/.cache/dashboard-kiosk-launch.log"
 echo ""
 echo " To restart:"
 echo "   docker compose restart"
@@ -403,7 +385,7 @@ if [[ "${AUTO_START,,}" == "y" || "${AUTO_START,,}" == "yes" ]]; then
     echo "   rm -f /home/${KIOSK_USER}/.config/autostart/dashboard-kiosk.desktop"
 fi
 echo ""
-echo " If the machine had boot issues after disabling the display manager, re-enable it manually:"
+echo " If the graphical login stops working, re-enable GDM manually:"
 echo "   sudo systemctl enable --now gdm3"
 echo "   # or lightdm / sddm depending on the system"
 echo ""

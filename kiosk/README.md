@@ -25,6 +25,7 @@ docker ps | grep dashboard-server
 docker ps | grep kiosk
 docker logs dashboard-server
 docker logs dashboard-kiosk
+tail -f ~/.cache/dashboard-kiosk-launch.log
 
 # Reboot to apply changes and start kiosk
 sudo reboot
@@ -86,18 +87,18 @@ If automatic graphical login is enabled during setup, the kiosk user is logged i
 | `DASHBOARD_PORT` | `8000` | Port used for startup readiness checks |
 | `CURSOR_TIMEOUT` | `5` | Seconds before cursor hides |
 | `MODE` | `host` | Display mode: `host` |
-| `RESOLUTION` | `1920x1080x24` | Xvfb resolution |
+| `RESOLUTION` | `1920x1080x24` | Fallback display resolution for logging/detection |
 | `FIREFOX_ARGS` | `--kiosk --private-window` | Firefox launch flags for fullscreen kiosk |
 
 ### Key Differences from Regular Mode
 
-| Feature | Regular Mode | Pre-Login Kiosk Mode |
+| Feature | Current Kiosk Mode | Notes |
 |---------|-------------|---------------------|
-| Display mode | `host` (uses existing X server) | `xvfb` (creates Xvfb) |
-| Privileged | No | Yes |
-| User | Kiosk user | Root |
-| Display manager | Kept running | Optional, not recommended by default |
-| Auto-start | At GUI login | User autostart desktop entry |
+| Display mode | `host` (uses existing X server) | Runtime detected |
+| Privileged | Yes | Needed for device/input access |
+| User | Kiosk user | Auto-login recommended |
+| Display manager | Kept running | Required |
+| Auto-start | User autostart desktop entry | After graphical login |
 
 ### Change Dashboard URL
 
