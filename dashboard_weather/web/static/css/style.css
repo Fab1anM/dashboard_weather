@@ -142,6 +142,14 @@ h1 {
   margin: 0;
 }
 
+.header-clock {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--text);
+}
+
 .title-sub {
   font-size: clamp(0.9rem, 1.8vw, 1.05rem);
   color: var(--text-muted);
