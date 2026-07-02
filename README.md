@@ -16,7 +16,7 @@ Das Dashboard kombiniert Echtzeit-Wetterdaten mit flugrelevanten Kontextinformat
 
 > **Hinweis:** Die NINA-API (`warnung.bund.de`) ist seit 2024 nicht mehr verfügbar. Der NINA-Client gibt leer zurück, ohne Fehlermeldungen zu erzeugen.
 
-<img src="assets/dashboard-screenshot.png" alt="Dashboard-Screenshot" width="800"/>
+<img src="assets/dashboard_screenshot.png" alt="Dashboard-Screenshot" width="800"/>
 
 ## Features
 
